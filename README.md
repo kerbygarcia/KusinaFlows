@@ -10,7 +10,6 @@
 Changes made by: (John Miles Varca)
 
 Removed Time Tracker
-
 • Added a UTD option when adding an item
 • Added a Log-Out button
 • Added 2 versions: Manager (all access), and Employee (Limited to Stock-in and Stock-out only)
