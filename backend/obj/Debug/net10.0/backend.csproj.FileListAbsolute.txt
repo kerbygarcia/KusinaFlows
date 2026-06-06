@@ -17,6 +17,7 @@ C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.AssemblyInfo.cs
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.csproj.CoreCompileInputs.cache
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cs
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cache
+C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.sourcelink.json
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json

@@ -1,0 +1,132 @@
+using Microsoft.AspNetCore.Mvc;
+using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using KusinaFlows.Models; 
+using KusinaFlows.Services; 
+
+namespace KusinaFlows.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class InventoryController : ControllerBase
+    {
+        private readonly DatabaseService _databaseService;
+
+        public InventoryController(DatabaseService databaseService)
+        {
+            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+        }
+
+        /// <summary>
+        /// GET: api/inventory
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAllInventory()
+        {
+            var inventoryList = new List<InventoryItem>();
+
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+
+                    string sql = @"
+                        SELECT ""BatchID"", ""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
+                               ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
+                               ""Status"", ""Available"" 
+                        FROM ""ITEM"" 
+                        WHERE ""Available"" = true 
+                        ORDER BY ""ItemName"" ASC, ""DAyear"" ASC, ""DAmonth"" ASC, ""DAday"" ASC;";
+                    
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            inventoryList.Add(new InventoryItem
+                            {
+                                BatchID = reader.GetInt32(0),
+                                ItemID = reader.GetInt32(1),
+                                ItemName = reader.GetString(2),
+                                Category = reader.GetString(3),
+                                Price = reader.GetDecimal(4),
+                                Quantity = reader.GetInt32(5),
+                                UTDmonth = reader.GetInt32(6),
+                                UTDday = reader.GetInt32(7),
+                                UTDyear = reader.GetInt32(8),
+                                DAmonth = reader.GetInt32(9),
+                                DAday = reader.GetInt32(10),
+                                DAyear = reader.GetInt32(11),
+                                Status = reader.GetString(12),
+                                Available = reader.GetBoolean(13)
+                            });
+                        }
+                    }
+                }
+
+                return Ok(inventoryList); 
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inside GET api/inventory: {ex.Message}");
+                return StatusCode(500, new { message = "Error pulling data records from ITEM table.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// POST: api/inventory/add
+        /// </summary>
+        [HttpPost("add")]
+        public async Task<IActionResult> AddProduct([FromBody] ProductCreateDTO dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.ItemName))
+            {
+                return BadRequest(new { message = "Invalid database data layout provided." });
+            }
+
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+
+                    string sql = @"
+                        INSERT INTO ""ITEM"" (""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
+                                            ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
+                                            ""Status"", ""Available"") 
+                        VALUES (@ItemID, @ItemName, @Category, @Price, @Quantity, 
+                                @UTDmonth, @UTDday, @UTDyear, @DAmonth, @DAday, @DAyear, 
+                                @Status, true);";
+                    
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@ItemID", dto.ItemID);
+                        cmd.Parameters.AddWithValue("@ItemName", dto.ItemName);
+                        cmd.Parameters.AddWithValue("@Category", dto.Category);
+                        cmd.Parameters.AddWithValue("@Price", dto.Price);
+                        cmd.Parameters.AddWithValue("@Quantity", dto.Quantity);
+                        cmd.Parameters.AddWithValue("@UTDmonth", dto.UTDmonth);
+                        cmd.Parameters.AddWithValue("@UTDday", dto.UTDday);
+                        cmd.Parameters.AddWithValue("@UTDyear", dto.UTDyear);
+                        cmd.Parameters.AddWithValue("@DAmonth", dto.DAmonth);
+                        cmd.Parameters.AddWithValue("@DAday", dto.DAday);
+                        cmd.Parameters.AddWithValue("@DAyear", dto.DAyear);
+                        cmd.Parameters.AddWithValue("@Status", dto.Status);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                return Ok(new { message = "Item row saved successfully." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inside POST api/inventory/add: {ex.Message}");
+                return StatusCode(500, new { message = "Failed to save item row.", error = ex.Message });
+            }
+        }
+    }
+}
