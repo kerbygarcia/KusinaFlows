@@ -128,5 +128,112 @@ namespace KusinaFlows.Controllers
                 return StatusCode(500, new { message = "Failed to save item row.", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// PUT: api/inventory/update-full-batch
+        /// Updates all editable parameters for a given batch row tracking record in the ITEM table
+        /// </summary>
+        [HttpPut("update-full-batch")]
+        public async Task<IActionResult> UpdateFullBatch([FromBody] FullBatchUpdateDTO dto)
+        {
+            if (dto == null)
+            {
+                return BadRequest(new { message = "Payload dataset empty or malformed." });
+            }
+
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+                    
+                    // Double-quoted identifiers match PostgreSQL/Neon case sensitivity rules perfectly
+                    string sql = @"
+                        UPDATE ""ITEM"" 
+                        SET ""ItemName"" = @ItemName, 
+                            ""Category"" = @Category, 
+                            ""Price"" = @Price, 
+                            ""Quantity"" = @Quantity, 
+                            ""UTDmonth"" = @UTDmonth, 
+                            ""UTDday"" = @UTDday, 
+                            ""UTDyear"" = @UTDyear
+                        WHERE ""BatchID"" = @BatchID;";
+                    
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@ItemName", dto.ItemName);
+                        cmd.Parameters.AddWithValue("@Category", dto.Category);
+                        cmd.Parameters.AddWithValue("@Price", dto.Price);
+                        cmd.Parameters.AddWithValue("@Quantity", dto.Quantity);
+                        cmd.Parameters.AddWithValue("@UTDmonth", dto.UTDmonth);
+                        cmd.Parameters.AddWithValue("@UTDday", dto.UTDday);
+                        cmd.Parameters.AddWithValue("@UTDyear", dto.UTDyear);
+                        cmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
+
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        
+                        if (rowsAffected == 0)
+                        {
+                            return NotFound(new { message = $"Batch ID {dto.BatchID} was not found in the database." });
+                        }
+                    }
+                }
+                return Ok(new { message = "Batch details updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during update-full-batch execution: {ex.Message}");
+                return StatusCode(500, new { message = "Database execution error.", error = ex.Message });
+            }
+        }
+        /// <summary>
+        /// DELETE: api/inventory/delete/{batchId}
+        /// Soft-deletes a specific inventory record by setting Available to false
+        /// </summary>
+        [HttpDelete("delete/{batchId}")]
+        public async Task<IActionResult> DeleteBatch(int batchId)
+        {
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+
+                    // Flags the specific record as unavailable so it disappears from the dashboard view
+                    string sql = @"UPDATE ""ITEM"" SET ""Available"" = false WHERE ""BatchID"" = @BatchID;";
+                    
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@BatchID", batchId);
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                        if (rowsAffected == 0)
+                        {
+                            return NotFound(new { message = "Hindi nahanap ang itinakdang Batch ID sa database." });
+                        }
+                    }
+                }
+
+                return Ok(new { message = "Batch row marked as unavailable successfully." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inside DELETE api/inventory/delete: {ex.Message}");
+                return StatusCode(500, new { message = "Failed to remove item row data.", error = ex.Message });
+            }
+        }
+    }
+
+        public class FullBatchUpdateDTO
+    {
+        public int BatchID { get; set; }
+        public int ItemID { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+        public int UTDmonth { get; set; }
+        public int UTDday { get; set; }
+        public int UTDyear { get; set; }
     }
 }
