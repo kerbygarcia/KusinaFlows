@@ -1,0 +1,324 @@
+<!--Dito mo ilagay yung panibagong dashboard kirsten-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    KusinaFlow Inventory System
+  </title>
+
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+  <!-- sidebar for navigation -->
+
+  <aside class="sidebar">
+
+    <div class="logo-section">
+
+      <div class="logo-placeholder">
+
+        <img
+          src="logoPlaceholder.jpeg"
+          alt="KusinaFlow Logo"
+        >
+
+      </div>
+
+      <h2>KusinaFlow</h2>
+
+      <p>Inventory Management</p>
+
+      <p1 class="manager-only">
+        Manager View</p1> <!--added by miles-->
+
+
+    </div>
+
+    <nav>
+
+      <ul>
+
+        <li class="active">
+          Dashboard
+        </li>
+
+        <li id="StockBtn"> <!--added by miles-->
+          Stocks
+        </li>
+
+        <li id="reportsBtn" class="manager-only">
+          Generate Reports
+        </li>
+
+        <li id="stockHistoryBtn" class="manager-only">
+          Stock History
+        </li>
+
+        <li id="logoutBtn">
+          Log Out
+        </li>
+
+      </ul>
+
+    </nav>
+
+  </aside>
+
+  <!-- main inventory section -->
+
+  <main class="main-content">
+
+    <header class="topbar">
+
+      <div>
+
+        <h1>Inventory Dashboard</h1>
+
+        <p class="subtitle">
+          Manage stock and inventory records
+        </p>
+
+      </div>
+
+      <!-- action buttons -->
+
+      <div class="topbar-actions">
+
+        <button
+          id="addItemBtn"
+          class="manager-only"
+        >
+          + Add Item
+        </button>
+
+        <button id="stockInBtn">
+          Stock-In
+        </button>
+
+        <button id="stockOutBtn">
+          Stock-Out
+        </button>
+
+        <button id="lowStockBtn">
+          Low Stock Items
+        </button>
+
+      </div>
+
+    </header>
+
+    <!-- dashboard cards -->
+
+    <section class="dashboard-cards">
+
+      <div class="card">
+
+        <h3>Total Items</h3>
+
+        <p id="totalItems">0</p>
+
+      </div>
+
+      <div class="card">
+
+        <h3>Inventory Value</h3>
+
+        <p id="inventoryValue">₱0</p>
+
+      </div>
+
+    </section>
+
+    <!-- search bar -->
+
+    <section class="search-section">
+
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search inventory items..."
+      >
+
+    </section>
+
+    <!-- inventory table -->
+
+    <section class="table-container">
+
+      <div class="table-header">
+
+        <h2>Inventory Items</h2>
+
+      </div>
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th></th>
+            <th>Item Name</th>
+            <th>Price</th>
+            <th>Total Quantity</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Actions</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="inventoryTableBody">
+
+        </tbody>
+
+      </table>
+
+    </section>
+
+  </main>
+
+  <!-- modal for adding/editing items -->
+
+  <div class="modal hidden" id="itemModal">
+
+    <div class="modal-content">
+
+      <h2 id="modalTitle">
+        Add Inventory Item
+      </h2>
+
+      <form id="itemForm">
+
+        <input
+          type="text"
+          id="itemName"
+          placeholder="Item Name"
+          required
+        >
+
+        <input
+          type="number"
+          id="itemQuantity"
+          placeholder="Quantity"
+          required
+        >
+
+        <input
+          type="text"
+          id="itemCategory"
+          placeholder="Category"
+          required
+        >
+
+        <input
+          type="number"
+          step="0.01"
+          id="itemPrice"
+          placeholder="Price"
+          required
+        >
+
+        <label>
+          Use-Thru-Date
+        </label>
+
+        <input
+          type="date"
+          id="itemUTD"
+          required
+        >
+
+        <div class="modal-buttons">
+
+          <button type="submit">
+            Save Item
+          </button>
+
+          <button
+            type="button"
+            id="closeModal"
+          >
+            Cancel
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+  <!-- modal for stock in and stock out -->
+
+  <div class="modal hidden" id="stockModal">
+
+    <div class="modal-content">
+
+      <h2 id="stockModalTitle">
+        Stock Transaction
+      </h2>
+
+      <form id="stockForm">
+
+        <select
+          id="stockItemSelect"
+          required
+        >
+        </select>
+
+        <input
+          type="number"
+          id="stockQuantity"
+          placeholder="Quantity"
+          required
+        >
+
+        <label id="stockUTDLabel">
+          Use-Thru-Date
+        </label>
+
+        <input
+          type="date"
+          id="stockUTD"
+        >
+
+        <div class="modal-buttons">
+
+          <button type="submit">
+            Submit
+          </button>
+
+          <button
+            type="button"
+            id="closeStockModal"
+          >
+            Cancel
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
