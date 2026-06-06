@@ -9,16 +9,13 @@ let stockRequests = [];
 let editingItemId = null;
 let currentStockAction = "";
 
-/* Dom elements */
+/* getting all needed html elements */
 
 const inventoryTableBody =
   document.getElementById("inventoryTableBody");
 
 const totalItems =
   document.getElementById("totalItems");
-
-const lowStockCount =
-  document.getElementById("lowStockCount");
 
 const inventoryValue =
   document.getElementById("inventoryValue");
@@ -44,7 +41,7 @@ const searchInput =
 const modalTitle =
   document.getElementById("modalTitle");
 
-/* User roles */
+/* hides manager buttons if employee */
 
 function applyUserRole(){
 
@@ -64,7 +61,7 @@ function applyUserRole(){
 
 applyUserRole();
 
-/* Inventory Value */
+/* computes total inventory value */
 
 function calculateInventoryValue(){
 
@@ -84,7 +81,7 @@ function calculateInventoryValue(){
 
 }
 
-/* Format Price */
+/* formats prices with commas */
 
 function formatPrice(value){
 
@@ -98,7 +95,7 @@ function formatPrice(value){
 
 }
 
-/* Total Quantity */
+/* gets total quantity of all batches */
 
 function getTotalQuantity(item){
 
@@ -110,7 +107,7 @@ function getTotalQuantity(item){
 
 }
 
-/* UTD Status */
+/* checks stock status */
 
 function getUTDStatus(item){
 
@@ -133,7 +130,7 @@ function getUTDStatus(item){
 
 }
 
-/* Add Item Modal */
+/* opens add item modal */
 
 document
   .getElementById("addItemBtn")
@@ -150,7 +147,7 @@ document
 
   });
 
-/* Close Item Modal */
+/* closes item modal */
 
 document
   .getElementById("closeModal")
@@ -160,7 +157,7 @@ document
 
   });
 
-/* Save Item */
+/* saves inventory item */
 
 itemForm.addEventListener("submit", (e) => {
 
@@ -251,7 +248,7 @@ itemForm.addEventListener("submit", (e) => {
 
 });
 
-/* Render Inventory */
+/* displays inventory table */
 
 function renderInventory(filteredItems = inventory){
 
@@ -341,7 +338,7 @@ function renderInventory(filteredItems = inventory){
 
     inventoryTableBody.appendChild(row);
 
-    /* Batch Rows */
+    /* expandable batch rows */
 
     if(item.expanded){
 
@@ -405,7 +402,7 @@ function renderInventory(filteredItems = inventory){
 
 }
 
-/* Toggle Expand */
+/* expands and collapses batches */
 
 function toggleExpand(id){
 
@@ -420,26 +417,45 @@ function toggleExpand(id){
 
 }
 
-/* Dashboard */
+/* updates dashboard values */
 
 function updateDashboard(){
 
   totalItems.textContent =
     inventory.length;
 
-  lowStockCount.textContent =
-    inventory.filter(item =>
-      getTotalQuantity(item) <= 5
-    ).length;
-
   inventoryValue.textContent =
     `₱${formatPrice(
       calculateInventoryValue()
     )}`;
 
+  /* changes low stock button color */
+
+  const lowStockButton =
+    document.getElementById("lowStockBtn");
+
+  const lowStockItems =
+    inventory.filter(item =>
+      getTotalQuantity(item) <= 5
+    );
+
+  if(lowStockItems.length > 0){
+
+    lowStockButton.style.background =
+      "#ff4757";
+
+  }
+
+  else{
+
+    lowStockButton.style.background =
+      "";
+
+  }
+
 }
 
-/* Edit Item */
+/* loads item info into edit modal */
 
 function editItem(id){
 
@@ -472,7 +488,7 @@ function editItem(id){
 
 }
 
-/* Delete Item */
+/* deletes item */
 
 function deleteItem(id){
 
@@ -499,7 +515,7 @@ function deleteItem(id){
 
 }
 
-/* Search */
+/* search filter */
 
 searchInput.addEventListener("keyup", () => {
 
@@ -520,7 +536,7 @@ searchInput.addEventListener("keyup", () => {
 
 });
 
-/* Stock Dropdown */
+/* updates stock dropdown */
 
 function populateStockDropdown(){
 
@@ -552,7 +568,7 @@ function populateStockDropdown(){
 
 }
 
-/* Stock In */
+/* opens stock in modal */
 
 document
   .getElementById("stockInBtn")
@@ -571,11 +587,13 @@ document
 
     stockForm.reset();
 
+    populateStockDropdown();
+
     stockModal.classList.remove("hidden");
 
   });
 
-/* Stock Out */
+/* opens stock out modal */
 
 document
   .getElementById("stockOutBtn")
@@ -594,11 +612,13 @@ document
 
     stockForm.reset();
 
+    populateStockDropdown();
+
     stockModal.classList.remove("hidden");
 
   });
 
-/* Close Stock Modal */
+/* closes stock modal */
 
 document
   .getElementById("closeStockModal")
@@ -608,7 +628,7 @@ document
 
   });
 
-/* Stock Transaction */
+/* handles stock transactions */
 
 stockForm.addEventListener("submit", (e) => {
 
@@ -640,7 +660,7 @@ stockForm.addEventListener("submit", (e) => {
       item => item.id === itemId
     );
 
-  /* STOCK-IN */
+  /* stock in */
 
   if(currentStockAction === "stock-in"){
 
@@ -660,7 +680,7 @@ stockForm.addEventListener("submit", (e) => {
 
   }
 
-  /* STOCK-OUT */
+  /* stock out using fifo */
 
   else{
 
@@ -711,7 +731,38 @@ stockForm.addEventListener("submit", (e) => {
 
 });
 
-/* Reports */
+/* low stock quick button */
+
+document
+  .getElementById("lowStockBtn")
+  .addEventListener("click", () => {
+
+    const lowStockItems =
+      inventory.filter(item =>
+        getTotalQuantity(item) <= 5
+      );
+
+    if(lowStockItems.length === 0){
+
+      alert("No low stock items.");
+
+      return;
+
+    }
+
+    alert(
+
+      lowStockItems.map(item => {
+
+        return `${item.name} (${getTotalQuantity(item)})`;
+
+      }).join("\n")
+
+    );
+
+  });
+
+/* reports */
 
 document
   .getElementById("reportsBtn")
@@ -759,7 +810,7 @@ document
 
   });
 
-/* Log out */
+/* logout placeholder */
 
 document
   .getElementById("logoutBtn")
@@ -769,6 +820,6 @@ document
 
   });
 
-/* Initialize */
+/* starts the system */
 
 renderInventory();

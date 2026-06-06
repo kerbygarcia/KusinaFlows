@@ -19,7 +19,7 @@
 
 <body>
 
-  <!-- SIDEBAR -->
+  <!-- sidebar for navigation -->
 
   <aside class="sidebar">
 
@@ -38,6 +38,10 @@
 
       <p>Inventory Management</p>
 
+      <p1 class="manager-only">
+        Manager View</p1> <!--added by miles-->
+
+
     </div>
 
     <nav>
@@ -46,6 +50,10 @@
 
         <li class="active">
           Dashboard
+        </li>
+
+        <li id="StockBtn"> <!--added by miles-->
+          Stocks
         </li>
 
         <li id="reportsBtn" class="manager-only">
@@ -70,7 +78,7 @@
 
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- main inventory section -->
 
   <main class="main-content">
 
@@ -85,6 +93,8 @@
         </p>
 
       </div>
+
+      <!-- action buttons -->
 
       <div class="topbar-actions">
 
@@ -103,11 +113,15 @@
           Stock-Out
         </button>
 
+        <button id="lowStockBtn">
+          Low Stock Items
+        </button>
+
       </div>
 
     </header>
 
-    <!-- DASHBOARD -->
+    <!-- dashboard cards -->
 
     <section class="dashboard-cards">
 
@@ -121,14 +135,6 @@
 
       <div class="card">
 
-        <h3>Low Stock</h3>
-
-        <p id="lowStockCount">0</p>
-
-      </div>
-
-      <div class="card">
-
         <h3>Inventory Value</h3>
 
         <p id="inventoryValue">₱0</p>
@@ -137,7 +143,7 @@
 
     </section>
 
-    <!-- SEARCH -->
+    <!-- search bar -->
 
     <section class="search-section">
 
@@ -149,7 +155,7 @@
 
     </section>
 
-    <!-- TABLE -->
+    <!-- inventory table -->
 
     <section class="table-container">
 
@@ -166,17 +172,11 @@
           <tr>
 
             <th></th>
-
             <th>Item Name</th>
-
             <th>Price</th>
-
             <th>Total Quantity</th>
-
             <th>Category</th>
-
             <th>Status</th>
-
             <th>Actions</th>
 
           </tr>
@@ -193,7 +193,7 @@
 
   </main>
 
-  <!-- ITEM MODAL -->
+  <!-- modal for adding/editing items -->
 
   <div class="modal hidden" id="itemModal">
 
@@ -265,7 +265,7 @@
 
   </div>
 
-  <!-- STOCK MODAL -->
+  <!-- modal for stock in and stock out -->
 
   <div class="modal hidden" id="stockModal">
 
