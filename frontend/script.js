@@ -762,13 +762,19 @@ document
 
   });
 
-/* reports */
+/* sidebar buttons */
 
 document
-  .getElementById("reportsBtn")
-  .addEventListener("click", function() {
+  .getElementById("dashboardBtn")
+  .addEventListener("click", () => {
+  window.location.href = "dashboard.html";
+  })
+
+document
+  document.getElementById("reportsBtn")
+  .addEventListener("click", () => {
     window.location.href = "gen-reports.html";
-})
+});
 
 
 /*document
@@ -787,7 +793,7 @@ document
 
 document
   .getElementById("stockHistoryBtn")
-  .addEventListener("click", function() {
+  .addEventListener("click", () => {
     window.location.href = "stockhistory.html";
   });
 
