@@ -766,20 +766,12 @@ document
 
 document
   .getElementById("reportsBtn")
-  .addEventListener("click", () => {
+  .addEventListener("click", function() {
+    window.location.href = "gen-reports.html";
+})
 
-    alert(
-      `Total Items: ${inventory.length}
 
-Inventory Value:
-₱${formatPrice(
-  calculateInventoryValue()
-)}`
-    );
-
-  });
-
-document
+/*document
   .getElementById("financialBtn")
   .addEventListener("click", () => {
 
@@ -791,23 +783,12 @@ document
     );
 
   });
+*/
 
 document
   .getElementById("stockHistoryBtn")
-  .addEventListener("click", () => {
-
-    if(stockHistory.length === 0){
-
-      alert("No stock history.");
-
-      return;
-
-    }
-
-    alert(
-      stockHistory.join("\n")
-    );
-
+  .addEventListener("click", function() {
+    window.location.href = "stockhistory.html";
   });
 
 /* logout placeholder */

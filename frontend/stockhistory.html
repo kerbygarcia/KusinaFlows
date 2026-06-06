@@ -52,15 +52,15 @@
           Dashboard
         </li>
 
-        <li id="StockBtn">
+        <li class="StockBtn">
           Stocks
         </li>
 
-        <li class="active" class="manager-only">
+        <li id="reportsBtn" class="manager-only">
           Generate Reports
         </li>
 
-        <li id="stockHistoryBtn" class="manager-only">
+        <li class="active" class="manager-only">
           Stock History
         </li>
 
@@ -82,19 +82,42 @@
 
       <div>
 
-        <h1>Reports</h1>
+        <h1>Inventory Dashboard</h1>
 
         <p class="subtitle">
-          Manage records and print records
+          Manage stock and inventory records
         </p>
 
       </div>
 
       <!-- action buttons -->
 
+      <div class="topbar-actions">
+
+        <button
+          id="addItemBtn"
+          class="manager-only"
+        >
+          + Add Item
+        </button>
+
+        <button id="stockInBtn">
+          Stock-In
+        </button>
+
+        <button id="stockOutBtn">
+          Stock-Out
+        </button>
+
+        <button id="lowStockBtn">
+          Low Stock Items
+        </button>
+
+      </div>
+
     </header>
 
-
+    <!-- dashboard cards -->
 
 
   <script src="script.js"></script>
