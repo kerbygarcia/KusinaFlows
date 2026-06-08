@@ -59,8 +59,12 @@
     </section>
 
     <section class="table-container">
-      <div class="table-header">
-        <h2>Inventory Items</h2>
+      <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 10px;">
+          <h2>Inventory Items</h2>
+          <label style="font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="showUnavailableCheckbox" style="transform: scale(1.2); cursor: pointer;"> 
+            Include Unavailable Items
+          </label>
       </div>
       <table>
         <thead>

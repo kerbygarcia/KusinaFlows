@@ -26,19 +26,18 @@ namespace KusinaFlows.Controllers
         public async Task<IActionResult> GetAllInventory()
         {
             var inventoryList = new List<InventoryItem>();
-
             try
             {
                 using (var connection = _databaseService.GetConnection())
                 {
                     await connection.OpenAsync();
-
+                    
+                    // REMOVED: WHERE "Available" = true to fetch all historical entries
                     string sql = @"
                         SELECT ""BatchID"", ""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
-                               ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
-                               ""Status"", ""Available"" 
+                            ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
+                            ""Status"", ""Available"" 
                         FROM ""ITEM"" 
-                        WHERE ""Available"" = true 
                         ORDER BY ""ItemName"" ASC, ""DAyear"" ASC, ""DAmonth"" ASC, ""DAday"" ASC;";
                     
                     using (var cmd = new NpgsqlCommand(sql, connection))
@@ -66,13 +65,11 @@ namespace KusinaFlows.Controllers
                         }
                     }
                 }
-
                 return Ok(inventoryList); 
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error inside GET api/inventory: {ex.Message}");
-                return StatusCode(500, new { message = "Error pulling data records from ITEM table.", error = ex.Message });
+                return StatusCode(500, new { message = "Error reading tracking tables.", error = ex.Message });
             }
         }
 

@@ -63,8 +63,31 @@ async function initializeDashboard() {
 }
 
 function groupInventoryData() {
+    const showAll = showUnavailableCheckbox ? showUnavailableCheckbox.checked : false;
     const groups = {};
+    const today = new Date();
+    // Zero out hours to ensure clean day-by-day calculations
+    today.setHours(0, 0, 0, 0);
+
     rawInventory.forEach(row => {
+        // --- LIVE DYNAMIC STATUS EVALUATION ---
+        const expiryDate = new Date(row.utDyear, row.utDmonth - 1, row.utDday);
+        expiryDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = expiryDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // Enforce Auto-Disable Rules based on your logic:
+        // 1. If expired (diffDays < 0) or 2. If quantity is 0
+        if (diffDays < 0 || row.quantity === 0) {
+            row.available = false;
+        }
+
+        // Filter based on the checkbox toggle state
+        if (!showAll && !row.available) {
+            return;
+        }
+
         if (!groups[row.itemName]) {
             groups[row.itemName] = {
                 id: row.itemID,
@@ -72,28 +95,100 @@ function groupInventoryData() {
                 price: row.price,
                 category: row.category,
                 expanded: false,
+                anyAvailable: false, 
                 batches: []
             };
         }
+        
+        if (row.available) {
+            groups[row.itemName].anyAvailable = true;
+        }
         groups[row.itemName].batches.push(row);
     });
-    inventoryGroups = Object.values(groups);
+
+    let groupedArray = Object.values(groups);
+
+    // SORTING: Entirely unavailable item lines drop to the absolute bottom
+    groupedArray.sort((a, b) => {
+        if (a.anyAvailable === b.anyAvailable) {
+            return a.name.localeCompare(b.name); 
+        }
+        return a.anyAvailable ? -1 : 1; 
+    });
+
+    inventoryGroups = groupedArray;
 }
 
 function renderInventory(filteredGroups = inventoryGroups) {
     if (!inventoryTableBody) return;
     inventoryTableBody.innerHTML = "";
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (filteredGroups.length === 0) {
-        inventoryTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">No data rows discovered.</td></tr>`;
+        inventoryTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">No items discovered.</td></tr>`;
         updateMetrics();
         return;
     }
 
     filteredGroups.forEach(group => {
-        const totalQty = group.batches.reduce((sum, b) => sum + b.quantity, 0);
-        const isLow = totalQty <= 5;
+        // Gather aggregated total quantities for active batches only
+        const totalQty = group.batches.reduce((sum, b) => sum + (b.available ? b.quantity : 0), 0);
+        const isGroupUnavailable = !group.anyAvailable;
+
+        // --- GROUP QUANTITY BADGE GENERATION ---
+        let qtyLabel = "";
+        let qtyColor = "";
+        if (totalQty === 0) {
+            qtyLabel = "No Stock";
+            qtyColor = "background: #fdadb2; color: #721c24;";
+        } else if (totalQty <= 5) {
+            qtyLabel = "Low Stock";
+            qtyColor = "background: #ffe0e3; color: #ff4757;";
+        } else if (totalQty > 15) {
+            qtyLabel = "High Stock";
+            qtyColor = "background: #d4edda; color: #28a745;";
+        } else {
+            qtyLabel = "Moderate Stock";
+            qtyColor = "background: #fff3cd; color: #856404;";
+        }
+
+        // --- GROUP UTD EXPIRES BADGE GENERATION ---
+        // For the main row, evaluate the closest upcoming expiration date among active batches
+        const activeBatches = group.batches.filter(b => b.available);
+        let utdLabel = "N/A";
+        let utdColor = "background: #eee; color: #666;";
+
+        if (activeBatches.length > 0) {
+            const minDays = Math.min(...activeBatches.map(b => {
+                const exp = new Date(b.utDyear, b.utDmonth - 1, b.utDday);
+                return Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+            }));
+
+            if (minDays < 0) {
+                utdLabel = "Expired";
+                utdColor = "background: #721c24; color: #ffffff;";
+            } else if (minDays <= 7) {
+                utdLabel = "Critical";
+                utdColor = "background: #ffe0e3; color: #ff4757;";
+            } else if (minDays <= 14) {
+                utdLabel = "Expiring Soon";
+                utdColor = "background: #fff3cd; color: #856404;";
+            } else {
+                utdLabel = "Fresh Stock";
+                utdColor = "background: #d4edda; color: #28a745;";
+            }
+        } else if (isGroupUnavailable) {
+            utdLabel = "Archived";
+            utdColor = "background: #fdadb2; color: #721c24;";
+        }
+
         const row = document.createElement("tr");
+        if (isGroupUnavailable) {
+            row.style.backgroundColor = "#fff5f5";
+            row.style.color = "#c0392b";
+        }
 
         row.innerHTML = `
             <td>
@@ -101,22 +196,32 @@ function renderInventory(filteredGroups = inventoryGroups) {
                     ${group.expanded ? "▲" : "▼"}
                 </span>
             </td>
-            <td><strong>${group.name}</strong></td>
+            <td><strong>${group.name} ${isGroupUnavailable ? '(Archived)' : ''}</strong></td>
             <td>₱${group.price.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${totalQty} units</td>
+            <td>${totalQty}</td>
             <td>${group.category}</td>
             <td>
-                <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: ${isLow ? '#ffe0e3' : '#d4edda'}; color: ${isLow ? '#ff4757' : '#28a745'};">
-                    ${isLow ? 'Running Out' : 'Safe'}
-                </span>
+                <!-- Side-by-side Status Layout Configuration -->
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; min-width: 85px; text-align: center; ${utdColor}">${utdLabel}</span>
+                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; min-width: 90px; text-align: center; ${qtyColor}">${qtyLabel}</span>
+                </div>
             </td>
             <td>
-                <button style="background: #2ed573; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="editItemGroup(${group.batches[0].batchID})">Edit</button>
+                ${!isGroupUnavailable ? `
+                    <button style="background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;" 
+                            onclick="deleteEntireItem('${group.name.replace(/'/g, "\\'")}')">
+                        Delete Item
+                    </button>
+                ` : `<span style="color: #aaa; font-style: italic; font-size: 13px;">No Actions</span>`}
             </td>
         `;
         inventoryTableBody.appendChild(row);
 
+        // --- EXPANDED NESTED SUB-TABLE BATCHES ---
         if (group.expanded) {
+            group.batches.sort((a, b) => (a.available === b.available) ? 0 : a.available ? -1 : 1);
+
             const batchRow = document.createElement("tr");
             batchRow.innerHTML = `
                 <td colspan="7">
@@ -126,23 +231,61 @@ function renderInventory(filteredGroups = inventoryGroups) {
                                 <tr style="border-bottom: 2px solid #ddd; text-align: left; font-size: 12px; color: #666;">
                                     <th style="padding: 6px;">Date Added</th>
                                     <th style="padding: 6px;">Batch Code</th>
-                                    <th style="padding: 6px;">Quantity Available</th>
+                                    <th style="padding: 6px;">Quantity</th>
                                     <th style="padding: 6px;">Use-Thru-Date (Expiry)</th>
-                                    <th style="padding: 6px; text-align: right;">System Adjustments</th>
+                                    <th style="padding: 6px;">Batch Status Indicators</th>
+                                    <th style="padding: 6px; text-align: right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${group.batches.map(b => {
                                     const daDate = `${String(b.dAmonth).padStart(2, '0')}/${String(b.dAday).padStart(2, '0')}/${b.dAyear}`;
                                     const utdDate = `${String(b.utDmonth).padStart(2, '0')}/${String(b.utDday).padStart(2, '0')}/${b.utDyear}`;
+                                    
+                                    const bExp = new Date(b.utDyear, b.utDmonth - 1, b.utDday);
+                                    bExp.setHours(0, 0, 0, 0);
+                                    const bDiffDays = Math.ceil((bExp - today) / (1000 * 60 * 60 * 24));
+
+                                    // 1. Batch Expiry Evaluation
+                                    let bUtdLabel = ""; let bUtdColor = "";
+                                    if (bDiffDays < 0) { bUtdLabel = "Expired"; bUtdColor = "background: #721c24; color: #ffffff;"; }
+                                    else if (bDiffDays <= 7) { bUtdLabel = "Critical"; bUtdColor = "background: #ffe0e3; color: #ff4757;"; }
+                                    else if (bDiffDays <= 14) { bUtdLabel = "Expiring Soon"; bUtdColor = "background: #fff3cd; color: #856404;"; }
+                                    else { bUtdLabel = "Fresh Stock"; bUtdColor = "background: #d4edda; color: #28a745;"; }
+
+                                    // 2. Batch Quantity Evaluation
+                                    let bQtyLabel = ""; let bQtyColor = "";
+                                    if (b.quantity === 0) { bQtyLabel = "No Stock"; bQtyColor = "background: #fdadb2; color: #721c24;"; }
+                                    else if (b.quantity <= 5) { bQtyLabel = "Low Stock"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
+                                    else if (b.quantity > 15) { bQtyLabel = "High Stock"; bQtyColor = "background: #d4edda; color: #28a745;"; }
+                                    else { bQtyLabel = "Moderate Stock"; bQtyColor = "background: #fff3cd; color: #856404;"; }
+
+                                    const batchRowStyle = !b.available 
+                                        ? `style="border-bottom: 1px solid #eee; font-size: 13px; background-color: #ffd6d6; color: #721c24;"` 
+                                        : `style="border-bottom: 1px solid #eee; font-size: 13px;"`;
+
                                     return `
-                                        <tr style="border-bottom: 1px solid #eee; font-size: 13px;">
-                                            <td style="padding: 6px; color: #555;">${daDate}</td>
-                                            <td style="padding: 6px; color: #888;">#BTC-${b.batchID}</td>
+                                        <tr ${batchRowStyle}>
+                                            <td style="padding: 6px;">${daDate}</td>
+                                            <td style="padding: 6px; opacity: 0.7;">#BTC-${b.batchID} ${!b.available ? '(Unavailable)' : ''}</td>
                                             <td style="padding: 6px; font-weight: 600;">${b.quantity}</td>
-                                            <td style="padding: 6px; color: #ff4757; font-weight: 500;">${utdDate}</td>
+                                            <td style="padding: 6px; font-weight: 500;">${utdDate}</td>
+                                            <td style="padding: 6px;">
+                                                <!-- Side-By-Side Sub-table Badges -->
+                                                <div style="display: flex; gap: 4px;">
+                                                    <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; min-width: 75px; text-align: center; ${bUtdColor}">${bUtdLabel}</span>
+                                                    <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; min-width: 80px; text-align: center; ${bQtyColor}">${bQtyLabel}</span>
+                                                </div>
+                                            </td>
                                             <td style="padding: 6px; text-align: right;">
-                                                <button style="background: #ff4757; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;" onclick="deleteBatchRow(${b.batchID})">Delete</button>
+                                                <button style="background: #2ed573; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; margin-right: 4px;" 
+                                                        onclick="editItemGroup(${b.batchID})">
+                                                    Edit Batch
+                                                </button>
+                                                <button style="background: #ff4757; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" 
+                                                        onclick="deleteBatchRow(${b.batchID})" ${!b.available ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>
+                                                    Delete Batch
+                                                </button>
                                             </td>
                                         </tr>
                                     `;
@@ -159,10 +302,32 @@ function renderInventory(filteredGroups = inventoryGroups) {
     updateMetrics();
 }
 
+// Event listener code to append at the very bottom of dashboard.js:
+if (showUnavailableCheckbox) {
+    showUnavailableCheckbox.addEventListener("change", () => {
+        groupInventoryData();
+        renderInventory();
+    });
+}
+
 function updateMetrics() {
-    if (totalItems) totalItems.textContent = inventoryGroups.length;
-    const valueSum = rawInventory.reduce((sum, row) => sum + (row.quantity * row.price), 0);
-    if (inventoryValue) inventoryValue.textContent = `₱${valueSum.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (totalItems) {
+        totalItems.textContent = inventoryGroups.filter(g => g.anyAvailable).length;
+    }
+    
+    const valueSum = rawInventory.reduce((sum, row) => {
+        if (row.available) {
+            return sum + (row.quantity * row.price);
+        }
+        return sum; 
+    }, 0);
+    
+    if (inventoryValue) {
+        inventoryValue.textContent = `₱${valueSum.toLocaleString("en-PH", { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        })}`;
+    }
 }
 
 function populateStockDropdown() {
@@ -234,17 +399,35 @@ window.editItemGroup = function(batchId) {
 };
 
 // DELETE (D) Operation
+// ==========================================
+// ASYNC DELETE OPERATION
+// ==========================================
 window.deleteBatchRow = async function(batchId) {
-    if (!confirm(`Are you sure you want to drop Batch #${batchId} from active data tracking?`)) return;
+    // Show a native confirmation prompt before taking destructive actions
+    if (!confirm(`Sigurado ka ba na gusto mong burahin ang Batch #${batchId}?`)) {
+        return; 
+    }
+
+    console.log("Sending delete request for Batch ID:", batchId);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/inventory/delete/${batchId}`, { method: "DELETE" });
-        if (!response.ok) throw new Error("Backend server declined transactional delete.");
+        const response = await fetch(`${API_BASE_URL}/inventory/delete/${batchId}`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || "Failed to remove record from backend.");
+        }
+
+        console.log(`Batch ${batchId} deleted successfully.`);
         
+        // Instantly reload your UI elements without refreshing the page
         await initializeDashboard();
+
     } catch (error) {
-        console.error("Delete operation crash:", error);
-        alert("Transaction failure: " + error.message);
+        console.error("Delete handler error:", error);
+        alert("Hindi naisakatuparan ang pagbura: " + error.message);
     }
 };
 
@@ -470,5 +653,48 @@ logoutBtn.addEventListener("click", () => {
     }
 });
 
+// ==========================================
+// DELETE ENTIRE ITEM GROUP (ALL BATCHES)
+// ==========================================
+window.deleteEntireItem = async function(itemName) {
+    if (!confirm(`Sigurado ka ba na gusto mong burahin ang buong record ng "${itemName}" pati ang lahat ng batches nito?`)) {
+        return;
+    }
+
+    // Find the UI group matching the selected product name
+    const group = inventoryGroups.find(g => g.name === itemName);
+    if (!group || group.batches.length === 0) {
+        alert("Hindi mahanap ang mga batches para sa item na ito.");
+        return;
+    }
+
+    console.log(`Starting cascade soft-delete for all batches under: ${itemName}`);
+
+    try {
+        // Map out every active BatchID under this specific item name group
+        const deletePromises = group.batches.map(batch => 
+            fetch(`${API_BASE_URL}/inventory/delete/${batch.batchID}`, { method: "DELETE" })
+        );
+
+        // Send all delete requests to the backend concurrently
+        const responses = await Promise.all(deletePromises);
+        
+        // Ensure every single request responded with an HTTP OK status code
+        const allSuccessful = responses.every(res => res.ok);
+
+        if (!allSuccessful) {
+            throw new Error("May ilang batch na hindi nabura nang maayos sa database.");
+        }
+
+        console.log(`All batches for "${itemName}" successfully marked unavailable.`);
+        await initializeDashboard(); // Refresh UI layout layout arrays
+
+    } catch (error) {
+        console.error("Cascade delete failure:", error);
+        alert("Error executing item removal: " + error.message);
+    }
+};
+
 // Run Init on Page Boot
 document.addEventListener("DOMContentLoaded", initializeDashboard);
+
