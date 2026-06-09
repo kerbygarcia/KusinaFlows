@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using KusinaFlows.Services; // <-- CHANGE THIS from ShopMiddleware.Services
+using KusinaFlows.Services;
 
-namespace KusinaFlows.Controllers // <-- CHANGE THIS from ShopMiddleware.Controllers
+namespace KusinaFlows.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class TestController : ControllerBase
     {
-        private readonly DatabaseService _dbService; // <-- This will clear up now!
+        private readonly DatabaseService _dbService; now!
 
         // Update the constructor name to match your class
         public TestController(DatabaseService dbService)
