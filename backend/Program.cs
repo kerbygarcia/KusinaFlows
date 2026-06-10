@@ -1,7 +1,11 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. ADD SERVICES TO THE CONTAINER (Must be ABOVE builder.Build())
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
 // Register the Authorization Services (THIS FIXES YOUR CRASH)
 builder.Services.AddAuthorization();
