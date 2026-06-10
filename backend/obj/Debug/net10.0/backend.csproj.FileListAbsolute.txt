@@ -55,7 +55,6 @@ C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\ba
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.sourcelink.json
-<<<<<<< Updated upstream
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -71,8 +70,3 @@ C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\re
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.pdb
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.genruntimeconfig.cache
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\ref\backend.dll
-=======
-C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.dll
-C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\refint\backend.dll
-C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.pdb
->>>>>>> Stashed changes
