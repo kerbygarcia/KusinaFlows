@@ -9,6 +9,7 @@ const inventoryTableBody = document.getElementById("inventoryTableBody");
 const totalItems = document.getElementById("totalItems");
 const inventoryValue = document.getElementById("inventoryValue");
 const searchInput = document.getElementById("searchInput");
+const showUnavailableCheckbox = document.getElementById("showUnavailableCheckbox");
 
 // Modals & Forms
 const itemModal = document.getElementById("itemModal");
@@ -66,7 +67,6 @@ function groupInventoryData() {
     const showAll = showUnavailableCheckbox ? showUnavailableCheckbox.checked : false;
     const groups = {};
     const today = new Date();
-    // Zero out hours to ensure clean day-by-day calculations
     today.setHours(0, 0, 0, 0);
 
     rawInventory.forEach(row => {
@@ -77,13 +77,10 @@ function groupInventoryData() {
         const diffTime = expiryDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // Enforce Auto-Disable Rules based on your logic:
-        // 1. If expired (diffDays < 0) or 2. If quantity is 0
         if (diffDays < 0 || row.quantity === 0) {
             row.available = false;
         }
 
-        // Filter based on the checkbox toggle state
         if (!showAll && !row.available) {
             return;
         }
@@ -108,7 +105,6 @@ function groupInventoryData() {
 
     let groupedArray = Object.values(groups);
 
-    // SORTING: Entirely unavailable item lines drop to the absolute bottom
     groupedArray.sort((a, b) => {
         if (a.anyAvailable === b.anyAvailable) {
             return a.name.localeCompare(b.name); 
@@ -133,11 +129,9 @@ function renderInventory(filteredGroups = inventoryGroups) {
     }
 
     filteredGroups.forEach(group => {
-        // Gather aggregated total quantities for active batches only
         const totalQty = group.batches.reduce((sum, b) => sum + (b.available ? b.quantity : 0), 0);
         const isGroupUnavailable = !group.anyAvailable;
 
-        // --- GROUP QUANTITY BADGE GENERATION ---
         let qtyLabel = "";
         let qtyColor = "";
         if (totalQty === 0) {
@@ -154,8 +148,6 @@ function renderInventory(filteredGroups = inventoryGroups) {
             qtyColor = "background: #fff3cd; color: #856404;";
         }
 
-        // --- GROUP UTD EXPIRES BADGE GENERATION ---
-        // For the main row, evaluate the closest upcoming expiration date among active batches
         const activeBatches = group.batches.filter(b => b.available);
         let utdLabel = "N/A";
         let utdColor = "background: #eee; color: #666;";
@@ -201,7 +193,6 @@ function renderInventory(filteredGroups = inventoryGroups) {
             <td>${totalQty}</td>
             <td>${group.category}</td>
             <td>
-                <!-- Side-by-side Status Layout Configuration -->
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; min-width: 85px; text-align: center; ${utdColor}">${utdLabel}</span>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; min-width: 90px; text-align: center; ${qtyColor}">${qtyLabel}</span>
@@ -218,7 +209,6 @@ function renderInventory(filteredGroups = inventoryGroups) {
         `;
         inventoryTableBody.appendChild(row);
 
-        // --- EXPANDED NESTED SUB-TABLE BATCHES ---
         if (group.expanded) {
             group.batches.sort((a, b) => (a.available === b.available) ? 0 : a.available ? -1 : 1);
 
@@ -246,14 +236,12 @@ function renderInventory(filteredGroups = inventoryGroups) {
                                     bExp.setHours(0, 0, 0, 0);
                                     const bDiffDays = Math.ceil((bExp - today) / (1000 * 60 * 60 * 24));
 
-                                    // 1. Batch Expiry Evaluation
                                     let bUtdLabel = ""; let bUtdColor = "";
                                     if (bDiffDays < 0) { bUtdLabel = "Expired"; bUtdColor = "background: #721c24; color: #ffffff;"; }
                                     else if (bDiffDays <= 7) { bUtdLabel = "Critical"; bUtdColor = "background: #ffe0e3; color: #ff4757;"; }
                                     else if (bDiffDays <= 14) { bUtdLabel = "Expiring Soon"; bUtdColor = "background: #fff3cd; color: #856404;"; }
                                     else { bUtdLabel = "Fresh Stock"; bUtdColor = "background: #d4edda; color: #28a745;"; }
 
-                                    // 2. Batch Quantity Evaluation
                                     let bQtyLabel = ""; let bQtyColor = "";
                                     if (b.quantity === 0) { bQtyLabel = "No Stock"; bQtyColor = "background: #fdadb2; color: #721c24;"; }
                                     else if (b.quantity <= 5) { bQtyLabel = "Low Stock"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
@@ -271,7 +259,6 @@ function renderInventory(filteredGroups = inventoryGroups) {
                                             <td style="padding: 6px; font-weight: 600;">${b.quantity}</td>
                                             <td style="padding: 6px; font-weight: 500;">${utdDate}</td>
                                             <td style="padding: 6px;">
-                                                <!-- Side-By-Side Sub-table Badges -->
                                                 <div style="display: flex; gap: 4px;">
                                                     <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; min-width: 75px; text-align: center; ${bUtdColor}">${bUtdLabel}</span>
                                                     <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; min-width: 80px; text-align: center; ${bQtyColor}">${bQtyLabel}</span>
@@ -302,7 +289,6 @@ function renderInventory(filteredGroups = inventoryGroups) {
     updateMetrics();
 }
 
-// Event listener code to append at the very bottom of dashboard.js:
 if (showUnavailableCheckbox) {
     showUnavailableCheckbox.addEventListener("change", () => {
         groupInventoryData();
@@ -334,10 +320,9 @@ function populateStockDropdown() {
     if (!stockItemSelect) return;
     stockItemSelect.innerHTML = '<option value="" disabled selected>Select an item registry...</option>';
     
-    // Get unique items by name to populate dropdown
     const itemTracker = new Set();
     rawInventory.forEach(row => {
-        if (!itemTracker.has(row.itemName)) {
+        if (row.available && !itemTracker.has(row.itemName)) {
             itemTracker.add(row.itemName);
             const opt = document.createElement("option");
             opt.value = row.itemID;
@@ -361,31 +346,25 @@ window.toggleExpand = function(groupName) {
     }
 };
 
-// UPDATE (U) Operation Setup
 window.editItemGroup = function(batchId) {
     console.log("🎯 Loading parameters into Edit Window for BatchID:", batchId);
     
-    // Find the exact flat data row matching this batch index number
     const targetBatch = rawInventory.find(b => b.batchID === batchId);
     if (!targetBatch) return;
 
     modalTitle.textContent = "Edit Inventory Item";
     
-    // 1. Assign identifier tracking codes to hidden elements
     document.getElementById("editBatchId").value = batchId;
     document.getElementById("editItemId").value = targetBatch.itemID;
 
-    // 2. Prepopulate all textual entry inputs
     document.getElementById("itemName").value = targetBatch.itemName;
     document.getElementById("itemQuantity").value = targetBatch.quantity;
     document.getElementById("itemCategory").value = targetBatch.category;
     document.getElementById("itemPrice").value = targetBatch.price;
     
-    // 3. Format integer date numbers (MM, DD, YYYY) into standard HTML input syntax (YYYY-MM-DD)
     const formattedDate = `${targetBatch.utDyear}-${String(targetBatch.utDmonth).padStart(2, '0')}-${String(targetBatch.utDday).padStart(2, '0')}`;
     document.getElementById("itemUTD").value = formattedDate;
 
-    // 4. Ensure all fields are fully displayed and active
     const qtyInput = document.getElementById("itemQuantity");
     const utdInput = document.getElementById("itemUTD");
     
@@ -398,13 +377,8 @@ window.editItemGroup = function(batchId) {
     itemModal.classList.remove("hidden");
 };
 
-// DELETE (D) Operation
-// ==========================================
-// ASYNC DELETE OPERATION
-// ==========================================
 window.deleteBatchRow = async function(batchId) {
-    // Show a native confirmation prompt before taking destructive actions
-    if (!confirm(`Sigurado ka ba na gusto mong burahin ang Batch #${batchId}?`)) {
+    if (!confirm(`Are you sure you want to delete Batch #${batchId}?`)) {
         return; 
     }
 
@@ -421,13 +395,11 @@ window.deleteBatchRow = async function(batchId) {
         }
 
         console.log(`Batch ${batchId} deleted successfully.`);
-        
-        // Instantly reload your UI elements without refreshing the page
         await initializeDashboard();
 
     } catch (error) {
         console.error("Delete handler error:", error);
-        alert("Hindi naisakatuparan ang pagbura: " + error.message);
+        alert("The deletion could not be executed: " + error.message);
     }
 };
 
@@ -451,7 +423,6 @@ itemForm.addEventListener("submit", async (e) => {
         const batchId = parseInt(document.getElementById("editBatchId").value);
         const itemId = parseInt(document.getElementById("editItemId").value);
         
-        // This payload preserves the exact structure of your ITEM database table rows!
         const payload = {
             batchID: batchId,
             itemID: itemId,
@@ -463,8 +434,6 @@ itemForm.addEventListener("submit", async (e) => {
             utDday: utdDate.getDate(),
             utDyear: utdDate.getFullYear()
         };
-
-        console.log("Submitting full layout batch edit request:", payload);
 
         try {
             const response = await fetch(`${API_BASE_URL}/inventory/update-full-batch`, {
@@ -482,9 +451,6 @@ itemForm.addEventListener("submit", async (e) => {
             alert("Error saving: " + error.message);
         }
     } else {
-        // ==========================================
-        // STANDARD ADD ITEM CONTEXT (UNCHANGED)
-        // ==========================================
         const nextId = rawInventory.length > 0 ? Math.max(...rawInventory.map(r => r.itemID)) + 1 : 101;
         const payload = {
             itemID: nextId,
@@ -516,37 +482,36 @@ itemForm.addEventListener("submit", async (e) => {
     }
 });
 
-// STOCK HANDLING ACTIONS (STOCK-IN / STOCK-OUT)
 stockForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
     const itemId = parseInt(selectedOption.value);
     const qty = parseInt(document.getElementById("stockQuantity").value);
-    const today = new Date();
 
     if (currentTransactionType === "IN") {
-        const utdValue = stockUTD.value;
-        if (!utdValue) {
-            alert("Please specify an expiry target mapping window.");
-            return;
-        }
-        const utdDate = new Date(utdValue);
-
+        // Safe, functional, untouched Stock-In handling
         const payload = {
             itemID: itemId,
             itemName: selectedOption.dataset.name,
             category: selectedOption.dataset.category,
             price: parseFloat(selectedOption.dataset.price),
             quantity: qty,
-            utDmonth: utdDate.getMonth() + 1,
-            utDday: utdDate.getDate(),
-            utDyear: utdDate.getFullYear(),
-            dAmonth: today.getMonth() + 1,
-            dAday: today.getDate(),
-            dAyear: today.getFullYear(),
-            status: "Restocked"
+            status: "Fresh Stock"
         };
+        
+        const utdValue = stockUTD.value;
+        if (utdValue) {
+            const utdDate = new Date(utdValue);
+            payload.utDmonth = utdDate.getMonth() + 1;
+            payload.utDday = utdDate.getDate();
+            payload.utDyear = utdDate.getFullYear();
+        }
+
+        const today = new Date();
+        payload.dAmonth = today.getMonth() + 1;
+        payload.dAday = today.getDate();
+        payload.dAyear = today.getFullYear();
 
         try {
             const response = await fetch(`${API_BASE_URL}/inventory/add`, {
@@ -554,24 +519,45 @@ stockForm.addEventListener("submit", async (e) => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error("Restock insertion step failed.");
+            if (!response.ok) throw new Error("Stock-In action failed on backend.");
             closeStockModalWindow();
             await initializeDashboard();
         } catch (error) {
             alert(error.message);
         }
-
+        
     } else if (currentTransactionType === "OUT") {
+        const stockBatchSelect = document.getElementById("stockBatchSelect");
+        const selectedBatchOption = stockBatchSelect.options[stockBatchSelect.selectedIndex];
+        
+        if (!selectedBatchOption || !selectedBatchOption.value) {
+            alert("Please select a specific batch to deduct from.");
+            return;
+        }
+
+        const batchId = parseInt(selectedBatchOption.value);
+        const maxAvailable = parseInt(selectedBatchOption.dataset.maxQty);
+
+        if (qty > maxAvailable) {
+            alert(`Cannot deduct ${qty} items. This batch only has ${maxAvailable} available.`);
+            return;
+        }
+
+        const payload = {
+            batchID: batchId,
+            quantity: qty
+        };
+
         try {
-            const response = await fetch(`${API_BASE_URL}/inventory/stock-out`, {
+            const response = await fetch(`${API_BASE_URL}/inventory/stock-out-specific`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ itemID: itemId, quantity: qty })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.message || "Reduction step processing failed.");
+                throw new Error(err.message || "Deduction failed.");
             }
             
             closeStockModalWindow();
@@ -589,7 +575,6 @@ addItemBtn.addEventListener("click", () => {
     modalTitle.textContent = "Add Inventory Item";
     itemForm.reset();
     
-    // Restore elements hidden during edits
     document.getElementById("itemQuantity").style.display = "block";
     document.getElementById("itemQuantity").setAttribute("required", "true");
     document.getElementById("itemUTD").style.display = "block";
@@ -603,6 +588,10 @@ stockInBtn.addEventListener("click", () => {
     currentTransactionType = "IN";
     stockModalTitle.textContent = "Stock-In Transaction (Add New Batch)";
     stockForm.reset();
+    
+    document.getElementById("batchSelectContainer").style.display = "none";
+    document.getElementById("stockBatchSelect").removeAttribute("required");
+    
     stockUTD.style.display = "block";
     stockUTD.setAttribute("required", "true");
     stockUTDLabel.style.display = "block";
@@ -611,8 +600,12 @@ stockInBtn.addEventListener("click", () => {
 
 stockOutBtn.addEventListener("click", () => {
     currentTransactionType = "OUT";
-    stockModalTitle.textContent = "Stock-Out Transaction (Deduct from Oldest)";
+    stockModalTitle.textContent = "Stock-Out Transaction (Deduct Specific Batch)";
     stockForm.reset();
+    
+    document.getElementById("batchSelectContainer").style.display = "block";
+    document.getElementById("stockBatchSelect").setAttribute("required", "true");
+    
     stockUTD.style.display = "none";
     stockUTD.removeAttribute("required");
     stockUTDLabel.style.display = "none";
@@ -657,37 +650,32 @@ logoutBtn.addEventListener("click", () => {
 // DELETE ENTIRE ITEM GROUP (ALL BATCHES)
 // ==========================================
 window.deleteEntireItem = async function(itemName) {
-    if (!confirm(`Sigurado ka ba na gusto mong burahin ang buong record ng "${itemName}" pati ang lahat ng batches nito?`)) {
+    if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
         return;
     }
 
-    // Find the UI group matching the selected product name
     const group = inventoryGroups.find(g => g.name === itemName);
     if (!group || group.batches.length === 0) {
-        alert("Hindi mahanap ang mga batches para sa item na ito.");
+        alert("Could not locate underlying batches for this product asset.");
         return;
     }
 
     console.log(`Starting cascade soft-delete for all batches under: ${itemName}`);
 
     try {
-        // Map out every active BatchID under this specific item name group
         const deletePromises = group.batches.map(batch => 
             fetch(`${API_BASE_URL}/inventory/delete/${batch.batchID}`, { method: "DELETE" })
         );
 
-        // Send all delete requests to the backend concurrently
         const responses = await Promise.all(deletePromises);
-        
-        // Ensure every single request responded with an HTTP OK status code
         const allSuccessful = responses.every(res => res.ok);
 
         if (!allSuccessful) {
-            throw new Error("May ilang batch na hindi nabura nang maayos sa database.");
+            throw new Error("Some batches failed to update structural integrity status.");
         }
 
         console.log(`All batches for "${itemName}" successfully marked unavailable.`);
-        await initializeDashboard(); // Refresh UI layout layout arrays
+        await initializeDashboard();
 
     } catch (error) {
         console.error("Cascade delete failure:", error);
@@ -695,6 +683,26 @@ window.deleteEntireItem = async function(itemName) {
     }
 };
 
+stockItemSelect.addEventListener("change", () => {
+    const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
+    const targetItemName = selectedOption.dataset.name;
+    const stockBatchSelect = document.getElementById("stockBatchSelect");
+    
+    if (!stockBatchSelect) return;
+    stockBatchSelect.innerHTML = '<option value="" disabled selected>Select an active batch...</option>';
+
+    if (currentTransactionType === "OUT") {
+        const activeBatches = rawInventory.filter(row => row.itemName === targetItemName && row.available && row.quantity > 0);
+
+        activeBatches.forEach(batch => {
+            const opt = document.createElement("option");
+            opt.value = batch.batchID;
+            opt.textContent = `Batch #${batch.batchID} (Qty: ${batch.quantity} - Exp: ${batch.utDmonth}/${batch.utDday}/${batch.utDyear})`;
+            opt.dataset.maxQty = batch.quantity;
+            stockBatchSelect.appendChild(opt);
+        });
+    }
+});
+
 // Run Init on Page Boot
 document.addEventListener("DOMContentLoaded", initializeDashboard);
-
