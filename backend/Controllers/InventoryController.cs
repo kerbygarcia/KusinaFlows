@@ -219,6 +219,74 @@ namespace KusinaFlows.Controllers
                 return StatusCode(500, new { message = "Failed to remove item row data.", error = ex.Message });
             }
         }
+
+        [HttpPost("stock-out-specific")]
+        public async Task<IActionResult> StockOutSpecific([FromBody] SpecificBatchStockOutDTO dto)
+        {
+            if (dto == null || dto.QuantityToDeduct <= 0)
+            {
+                return BadRequest(new { message = "Mangyaring maglagay ng tamang dami ng ibabawas." });
+            }
+
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+
+                    // 1. Fetch the targeted batch row directly to verify remaining stock
+                    string selectSql = @"
+                        SELECT ""Quantity"" FROM ""ITEM"" 
+                        WHERE ""BatchID"" = @BatchID AND ""Available"" = true;";
+
+                    int currentQuantity = 0;
+
+                    using (var selectCmd = new NpgsqlCommand(selectSql, connection))
+                    {
+                        selectCmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
+                        var result = await selectCmd.ExecuteScalarAsync();
+
+                        if (result == null)
+                        {
+                            return NotFound(new { message = "Hindi nahanap ang piniling batch o hindi na ito available." });
+                        }
+                        currentQuantity = Convert.ToInt32(result);
+                    }
+
+                    // 2. Structural safety verification check
+                    if (currentQuantity < dto.QuantityToDeduct)
+                    {
+                        return BadRequest(new { message = $"Kulang ang stock sa batch na ito. Mayroon lamang {currentQuantity} na natitirang marka." });
+                    }
+
+                    // 3. Deduct stock and dynamically flip 'Available' to false if it hits zero
+                    int newQuantity = currentQuantity - dto.QuantityToDeduct;
+                    bool isAvailable = newQuantity > 0;
+
+                    string updateSql = @"
+                        UPDATE ""ITEM"" 
+                        SET ""Quantity"" = @Quantity,
+                            ""Available"" = @Available
+                        WHERE ""BatchID"" = @BatchID;";
+
+                    using (var updateCmd = new NpgsqlCommand(updateSql, connection))
+                    {
+                        updateCmd.Parameters.AddWithValue("@Quantity", newQuantity);
+                        updateCmd.Parameters.AddWithValue("@Available", isAvailable);
+                        updateCmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
+
+                        await updateCmd.ExecuteNonQueryAsync();
+                    }
+
+                    return Ok(new { message = "Matagumpay na nabawasan ang stock mula sa piniling batch!" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Specific Stock-Out Failure: {ex.Message}");
+                return StatusCode(500, new { message = "Nagkaroon ng error sa pagbawas ng stock.", error = ex.Message });
+            }
+        }
     }
 
         public class FullBatchUpdateDTO
@@ -233,4 +301,10 @@ namespace KusinaFlows.Controllers
         public int UTDday { get; set; }
         public int UTDyear { get; set; }
     }
-}
+
+    public class SpecificBatchStockOutDTO
+    {
+        public int BatchID { get; set; }
+        public int QuantityToDeduct { get; set; }
+    }
+}       

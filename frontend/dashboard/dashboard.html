@@ -112,16 +112,33 @@
     <div class="modal-content">
       <h2 id="stockModalTitle">Stock Transaction</h2>
       <form id="stockForm">
-        <select id="stockItemSelect" required></select>
-        <input type="number" id="stockQuantity" placeholder="Quantity" required>
-        
-        <label id="stockUTDLabel">Use-Thru-Date</label>
-        <input type="date" id="stockUTD">
+          <h3 id="stockModalTitle">Stock-Out Transaction</h3>
 
-        <div class="modal-buttons">
-          <button type="submit">Submit</button>
-          <button type="button" id="closeStockModal">Cancel</button>
-        </div>
+          <label>Category:</label>
+          <select id="stockCategorySelect" required>
+              <option value="" disabled selected>Pumili ng Kategorya...</option>
+          </select>
+
+          <label>Item Name:</label>
+          <select id="stockItemSelect" required disabled>
+              <option value="" disabled selected>Pumili muna ng Kategorya...</option>
+          </select>
+
+          <label id="stockBatchLabel">Available Batch:</label>
+          <select id="stockBatchSelect" required disabled>
+              <option value="" disabled selected>Pumili muna ng Item...</option>
+          </select>
+
+          <label id="stockUTDLabel">Use-Thru-Date (Expiry):</label>
+          <input type="date" id="stockUTD">
+
+          <label>Quantity:</label>
+          <input type="number" id="stockQuantity" min="1" required placeholder="Ilan ang ibabawas o idadagdag?">
+
+          <div class="modal-actions">
+              <button type="submit" class="btn-confirm">Confirm</button>
+              <button type="button" id="closeStockModal" class="btn-cancel">Cancel</button>
+          </div>
       </form>
     </div>
   </div>
