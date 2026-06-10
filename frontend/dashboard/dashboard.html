@@ -113,6 +113,12 @@
       <h2 id="stockModalTitle">Stock Transaction</h2>
       <form id="stockForm">
         <select id="stockItemSelect" required></select>
+        
+        <div id="batchSelectContainer" style="display: none; margin-bottom: 15px;">
+          <label for="stockBatchSelect" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Deductible Batch Source</label>
+          <select id="stockBatchSelect" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;"></select>
+        </div>
+
         <input type="number" id="stockQuantity" placeholder="Quantity" required>
         
         <label id="stockUTDLabel">Use-Thru-Date</label>
