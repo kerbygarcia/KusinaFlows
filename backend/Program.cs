@@ -1,27 +1,41 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Tell C# you are building data controllers (APIs)
+// 1. ADD SERVICES TO THE CONTAINER (Must be ABOVE builder.Build())
 builder.Services.AddControllers();
 
-// 2. Open up permissions so your local browser doesn't block incoming data
+// Register the Authorization Services (THIS FIXES YOUR CRASH)
+builder.Services.AddAuthorization();
+
+// Add your CORS policy configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500") // Default Live Server ports
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
 });
 
-var app = builder.Build();
+// Register your custom Neon database service wrapper
+builder.Services.AddSingleton<KusinaFlows.Services.DatabaseService>();
 
-// 3. Activate routing, security checkpoints, and permissions
-app.UseRouting();
+// ==========================================================
+var app = builder.Build(); // The boundary line
+// ==========================================================
+
+// 2. CONFIGURE THE HTTP REQUEST PIPELINE (Must be BELOW builder.Build())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+// Order matters here: Activate CORS first, then Authorization, then map endpoints
 app.UseCors("AllowFrontend");
+
 app.UseAuthorization();
 
-// 4. Map requests to your upcoming controller folders
 app.MapControllers();
 
 app.Run();
