@@ -138,13 +138,13 @@ function renderInventory(filteredGroups = inventoryGroups) {
             qtyLabel = "No Stock";
             qtyColor = "background: #fdadb2; color: #721c24;";
         } else if (totalQty <= 5) {
-            qtyLabel = "Low Stock";
+            qtyLabel = "Low Quantity";
             qtyColor = "background: #ffe0e3; color: #ff4757;";
         } else if (totalQty > 15) {
-            qtyLabel = "High Stock";
+            qtyLabel = "High Quantity";
             qtyColor = "background: #d4edda; color: #28a745;";
         } else {
-            qtyLabel = "Moderate Stock";
+            qtyLabel = "Moderate Quantity";
             qtyColor = "background: #fff3cd; color: #856404;";
         }
 
@@ -244,9 +244,9 @@ function renderInventory(filteredGroups = inventoryGroups) {
 
                                     let bQtyLabel = ""; let bQtyColor = "";
                                     if (b.quantity === 0) { bQtyLabel = "No Stock"; bQtyColor = "background: #fdadb2; color: #721c24;"; }
-                                    else if (b.quantity <= 5) { bQtyLabel = "Low Stock"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
-                                    else if (b.quantity > 15) { bQtyLabel = "High Stock"; bQtyColor = "background: #d4edda; color: #28a745;"; }
-                                    else { bQtyLabel = "Moderate Stock"; bQtyColor = "background: #fff3cd; color: #856404;"; }
+                                    else if (b.quantity <= 5) { bQtyLabel = "Low Quantity"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
+                                    else if (b.quantity > 15) { bQtyLabel = "High Quantity"; bQtyColor = "background: #d4edda; color: #28a745;"; }
+                                    else { bQtyLabel = "Moderate Quantity"; bQtyColor = "background: #fff3cd; color: #856404;"; }
 
                                     const batchRowStyle = !b.available 
                                         ? `style="border-bottom: 1px solid #eee; font-size: 13px; background-color: #ffd6d6; color: #721c24;"` 
