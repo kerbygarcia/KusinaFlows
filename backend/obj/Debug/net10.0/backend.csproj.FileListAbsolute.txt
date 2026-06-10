@@ -32,6 +32,7 @@ C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\refint\backend.dll
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.pdb
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\backend.genruntimeconfig.cache
 C:\OOP Project\KusinaFlows\backend\obj\Debug\net10.0\ref\backend.dll
+<<<<<<< Updated upstream
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\appsettings.Development.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\appsettings.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\backend.staticwebassets.endpoints.json
@@ -43,6 +44,8 @@ C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\ba
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\Microsoft.OpenApi.dll
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\bin\Debug\net10.0\Npgsql.dll
+=======
+>>>>>>> Stashed changes
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.csproj.AssemblyReference.cache
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rpswa.dswa.cache.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.GeneratedMSBuildEditorConfig.editorconfig
@@ -52,6 +55,7 @@ C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\ba
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.sourcelink.json
+<<<<<<< Updated upstream
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -67,3 +71,8 @@ C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\re
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.pdb
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.genruntimeconfig.cache
 C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\ref\backend.dll
+=======
+C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.dll
+C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\refint\backend.dll
+C:\Users\Rodz\OneDrive\Documents\GitHub\KusinaFlows\backend\obj\Debug\net10.0\backend.pdb
+>>>>>>> Stashed changes
