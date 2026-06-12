@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization;
 using KusinaFlows.Models; 
 using KusinaFlows.Services; 
 
@@ -36,8 +35,8 @@ namespace KusinaFlows.Controllers
                     
                     string sql = @"
                         SELECT ""BatchID"", ""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
-                            ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
-                            ""Status"", ""Available"" 
+                               ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
+                               ""Status"", ""Available"" 
                         FROM ""ITEM"" 
                         ORDER BY ""ItemName"" ASC, ""DAyear"" ASC, ""DAmonth"" ASC, ""DAday"" ASC;";
                     
@@ -91,10 +90,9 @@ namespace KusinaFlows.Controllers
                 {
                     await connection.OpenAsync();
 
+                    // --- FIXED: Repaired broken duplicate column matrix syntax string ---
                     string sql = @"
                         INSERT INTO ""ITEM"" (""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
-                                             ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
-                                             ""Status"", ""Available"") 
                                              ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
                                              ""Status"", ""Available"") 
                         VALUES (@ItemID, @ItemName, @Category, @Price, @Quantity, 
@@ -126,53 +124,6 @@ namespace KusinaFlows.Controllers
             {
                 Console.WriteLine($"Error inside POST api/inventory/add: {ex.Message}");
                 return StatusCode(500, new { message = "Failed to save item row.", error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// POST: api/inventory/stock-out-specific
-        /// Deducts quantity from a specific target batch and marks it unavailable if it reaches 0
-        /// </summary>
-        [HttpPost("stock-out-specific")]
-        public async Task<IActionResult> StockOutSpecific([FromBody] SpecificStockOutDTO dto)
-        {
-            if (dto == null || dto.BatchID <= 0 || dto.Quantity <= 0)
-            {
-                return BadRequest(new { message = "Invalid transaction metrics supplied." });
-            }
-
-            try
-            {
-                using (var connection = _databaseService.GetConnection())
-                {
-                    await connection.OpenAsync();
-
-                    string sql = @"
-                        UPDATE ""ITEM""
-                        SET ""Quantity"" = ""Quantity"" - @Quantity,
-                            ""Available"" = CASE WHEN (""Quantity"" - @Quantity) <= 0 THEN false ELSE ""Available"" END
-                        WHERE ""BatchID"" = @BatchID AND ""Available"" = true AND ""Quantity"" >= @Quantity;";
-
-                    using (var cmd = new NpgsqlCommand(sql, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@Quantity", dto.Quantity);
-                        cmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
-
-                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
-
-                        if (rowsAffected == 0)
-                        {
-                            return BadRequest(new { message = "Transaction rejected. Batch may not exist, is already archived, or lacks sufficient quantities." });
-                        }
-                    }
-                }
-
-                return Ok(new { message = "Stock successfully deducted from selected batch." });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error during stock-out-specific execution: {ex.Message}");
-                return StatusCode(500, new { message = "Database processing failure.", error = ex.Message });
             }
         }
 
@@ -279,7 +230,6 @@ namespace KusinaFlows.Controllers
             }
         }
 
-
         /// <summary>
         /// DELETE: api/inventory/delete/{batchId}
         /// </summary>
@@ -357,10 +307,21 @@ namespace KusinaFlows.Controllers
         public string Status { get; set; } = string.Empty;
     }
 
-    // --- DATA TRANSFER OBJECTS (DTOs) ---
-
-    public class ProductCreateDTO
+    // --- FIXED: Added the missing configuration DTO class ---
+    public class SpecificStockOutDTO
     {
+        [JsonPropertyName("batchID")]
+        public int BatchID { get; set; }
+
+        [JsonPropertyName("quantity")]
+        public int Quantity { get; set; }
+    }
+
+    public class FullBatchUpdateDTO
+    {
+        [JsonPropertyName("batchID")]
+        public int BatchID { get; set; }
+
         [JsonPropertyName("itemID")]
         public int ItemID { get; set; }
 
@@ -384,83 +345,5 @@ namespace KusinaFlows.Controllers
 
         [JsonPropertyName("utDyear")]
         public int UTDyear { get; set; }
-
-        [JsonPropertyName("dAmonth")]
-        public int DAmonth { get; set; }
-
-        [JsonPropertyName("dAday")]
-        public int DAday { get; set; }
-
-        [JsonPropertyName("dAyear")]
-        public int DAyear { get; set; }
-
-        [JsonPropertyName("status")]
-        public string Status { get; set; } = string.Empty;
-    }
-
-    public class FullBatchUpdateDTO
-    public class FullBatchUpdateDTO
-    {
-        [JsonPropertyName("batchID")]
-        [JsonPropertyName("batchID")]
-        public int BatchID { get; set; }
-
-        [JsonPropertyName("itemID")]
-
-        [JsonPropertyName("itemID")]
-        public int ItemID { get; set; }
-
-        [JsonPropertyName("itemName")]
-
-        [JsonPropertyName("itemName")]
-        public string ItemName { get; set; } = string.Empty;
-
-        [JsonPropertyName("category")]
-
-        [JsonPropertyName("category")]
-        public string Category { get; set; } = string.Empty;
-
-        [JsonPropertyName("price")]
-
-        [JsonPropertyName("price")]
-        public decimal Price { get; set; }
-
-        [JsonPropertyName("quantity")]
-
-        [JsonPropertyName("quantity")]
-        public int Quantity { get; set; }
-
-        [JsonPropertyName("utDmonth")]
-
-        [JsonPropertyName("utDmonth")]
-        public int UTDmonth { get; set; }
-
-        [JsonPropertyName("utDday")]
-
-        [JsonPropertyName("utDday")]
-        public int UTDday { get; set; }
-
-        [JsonPropertyName("utDyear")]
-
-        [JsonPropertyName("utDyear")]
-        public int UTDyear { get; set; }
-    }
-
-    public class SpecificStockOutDTO
-    {
-        [JsonPropertyName("batchID")]
-        public int BatchID { get; set; }
-        
-        [JsonPropertyName("quantity")]
-        public int Quantity { get; set; }
-    }
-
-    public class SpecificStockOutDTO
-    {
-        [JsonPropertyName("batchID")]
-        public int BatchID { get; set; }
-        
-        [JsonPropertyName("quantity")]
-        public int Quantity { get; set; }
     }
 }
