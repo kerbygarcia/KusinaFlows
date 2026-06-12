@@ -3,6 +3,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 using KusinaFlows.Models; 
 using KusinaFlows.Services; 
 
@@ -32,7 +33,6 @@ namespace KusinaFlows.Controllers
                 {
                     await connection.OpenAsync();
                     
-                    // REMOVED: WHERE "Available" = true to fetch all historical entries
                     string sql = @"
                         SELECT ""BatchID"", ""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
                             ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
@@ -92,8 +92,8 @@ namespace KusinaFlows.Controllers
 
                     string sql = @"
                         INSERT INTO ""ITEM"" (""ItemID"", ""ItemName"", ""Category"", ""Price"", ""Quantity"", 
-                                            ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
-                                            ""Status"", ""Available"") 
+                                             ""UTDmonth"", ""UTDday"", ""UTDyear"", ""DAmonth"", ""DAday"", ""DAyear"", 
+                                             ""Status"", ""Available"") 
                         VALUES (@ItemID, @ItemName, @Category, @Price, @Quantity, 
                                 @UTDmonth, @UTDday, @UTDyear, @DAmonth, @DAday, @DAyear, 
                                 @Status, true);";
@@ -127,8 +127,54 @@ namespace KusinaFlows.Controllers
         }
 
         /// <summary>
+        /// POST: api/inventory/stock-out-specific
+        /// Deducts quantity from a specific target batch and marks it unavailable if it reaches 0
+        /// </summary>
+        [HttpPost("stock-out-specific")]
+        public async Task<IActionResult> StockOutSpecific([FromBody] SpecificStockOutDTO dto)
+        {
+            if (dto == null || dto.BatchID <= 0 || dto.Quantity <= 0)
+            {
+                return BadRequest(new { message = "Invalid transaction metrics supplied." });
+            }
+
+            try
+            {
+                using (var connection = _databaseService.GetConnection())
+                {
+                    await connection.OpenAsync();
+
+                    string sql = @"
+                        UPDATE ""ITEM""
+                        SET ""Quantity"" = ""Quantity"" - @Quantity,
+                            ""Available"" = CASE WHEN (""Quantity"" - @Quantity) <= 0 THEN false ELSE ""Available"" END
+                        WHERE ""BatchID"" = @BatchID AND ""Available"" = true AND ""Quantity"" >= @Quantity;";
+
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Quantity", dto.Quantity);
+                        cmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
+
+                        int rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+                        if (rowsAffected == 0)
+                        {
+                            return BadRequest(new { message = "Transaction rejected. Batch may not exist, is already archived, or lacks sufficient quantities." });
+                        }
+                    }
+                }
+
+                return Ok(new { message = "Stock successfully deducted from selected batch." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during stock-out-specific execution: {ex.Message}");
+                return StatusCode(500, new { message = "Database processing failure.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// PUT: api/inventory/update-full-batch
-        /// Updates all editable parameters for a given batch row tracking record in the ITEM table
         /// </summary>
         [HttpPut("update-full-batch")]
         public async Task<IActionResult> UpdateFullBatch([FromBody] FullBatchUpdateDTO dto)
@@ -144,7 +190,6 @@ namespace KusinaFlows.Controllers
                 {
                     await connection.OpenAsync();
                     
-                    // Double-quoted identifiers match PostgreSQL/Neon case sensitivity rules perfectly
                     string sql = @"
                         UPDATE ""ITEM"" 
                         SET ""ItemName"" = @ItemName, 
@@ -183,9 +228,9 @@ namespace KusinaFlows.Controllers
                 return StatusCode(500, new { message = "Database execution error.", error = ex.Message });
             }
         }
+
         /// <summary>
         /// DELETE: api/inventory/delete/{batchId}
-        /// Soft-deletes a specific inventory record by setting Available to false
         /// </summary>
         [HttpDelete("delete/{batchId}")]
         public async Task<IActionResult> DeleteBatch(int batchId)
@@ -196,7 +241,6 @@ namespace KusinaFlows.Controllers
                 {
                     await connection.OpenAsync();
 
-                    // Flags the specific record as unavailable so it disappears from the dashboard view
                     string sql = @"UPDATE ""ITEM"" SET ""Available"" = false WHERE ""BatchID"" = @BatchID;";
                     
                     using (var cmd = new NpgsqlCommand(sql, connection))
@@ -206,7 +250,7 @@ namespace KusinaFlows.Controllers
 
                         if (rowsAffected == 0)
                         {
-                            return NotFound(new { message = "Hindi nahanap ang itinakdang Batch ID sa database." });
+                            return NotFound(new { message = "Target Batch ID was not found in the database." });
                         }
                     }
                 }
@@ -219,92 +263,85 @@ namespace KusinaFlows.Controllers
                 return StatusCode(500, new { message = "Failed to remove item row data.", error = ex.Message });
             }
         }
-
-        [HttpPost("stock-out-specific")]
-        public async Task<IActionResult> StockOutSpecific([FromBody] SpecificBatchStockOutDTO dto)
-        {
-            if (dto == null || dto.QuantityToDeduct <= 0)
-            {
-                return BadRequest(new { message = "Mangyaring maglagay ng tamang dami ng ibabawas." });
-            }
-
-            try
-            {
-                using (var connection = _databaseService.GetConnection())
-                {
-                    await connection.OpenAsync();
-
-                    // 1. Fetch the targeted batch row directly to verify remaining stock
-                    string selectSql = @"
-                        SELECT ""Quantity"" FROM ""ITEM"" 
-                        WHERE ""BatchID"" = @BatchID AND ""Available"" = true;";
-
-                    int currentQuantity = 0;
-
-                    using (var selectCmd = new NpgsqlCommand(selectSql, connection))
-                    {
-                        selectCmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
-                        var result = await selectCmd.ExecuteScalarAsync();
-
-                        if (result == null)
-                        {
-                            return NotFound(new { message = "Hindi nahanap ang piniling batch o hindi na ito available." });
-                        }
-                        currentQuantity = Convert.ToInt32(result);
-                    }
-
-                    // 2. Structural safety verification check
-                    if (currentQuantity < dto.QuantityToDeduct)
-                    {
-                        return BadRequest(new { message = $"Kulang ang stock sa batch na ito. Mayroon lamang {currentQuantity} na natitirang marka." });
-                    }
-
-                    // 3. Deduct stock and dynamically flip 'Available' to false if it hits zero
-                    int newQuantity = currentQuantity - dto.QuantityToDeduct;
-                    bool isAvailable = newQuantity > 0;
-
-                    string updateSql = @"
-                        UPDATE ""ITEM"" 
-                        SET ""Quantity"" = @Quantity,
-                            ""Available"" = @Available
-                        WHERE ""BatchID"" = @BatchID;";
-
-                    using (var updateCmd = new NpgsqlCommand(updateSql, connection))
-                    {
-                        updateCmd.Parameters.AddWithValue("@Quantity", newQuantity);
-                        updateCmd.Parameters.AddWithValue("@Available", isAvailable);
-                        updateCmd.Parameters.AddWithValue("@BatchID", dto.BatchID);
-
-                        await updateCmd.ExecuteNonQueryAsync();
-                    }
-
-                    return Ok(new { message = "Matagumpay na nabawasan ang stock mula sa piniling batch!" });
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] Specific Stock-Out Failure: {ex.Message}");
-                return StatusCode(500, new { message = "Nagkaroon ng error sa pagbawas ng stock.", error = ex.Message });
-            }
-        }
     }
 
-        public class FullBatchUpdateDTO
+    // --- DATA TRANSFER OBJECTS (DTOs) ---
+
+    public class ProductCreateDTO
     {
-        public int BatchID { get; set; }
+        [JsonPropertyName("itemID")]
         public int ItemID { get; set; }
+
+        [JsonPropertyName("itemName")]
         public string ItemName { get; set; } = string.Empty;
+
+        [JsonPropertyName("category")]
         public string Category { get; set; } = string.Empty;
+
+        [JsonPropertyName("price")]
         public decimal Price { get; set; }
+
+        [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
+
+        [JsonPropertyName("utDmonth")]
         public int UTDmonth { get; set; }
+
+        [JsonPropertyName("utDday")]
         public int UTDday { get; set; }
+
+        [JsonPropertyName("utDyear")]
+        public int UTDyear { get; set; }
+
+        [JsonPropertyName("dAmonth")]
+        public int DAmonth { get; set; }
+
+        [JsonPropertyName("dAday")]
+        public int DAday { get; set; }
+
+        [JsonPropertyName("dAyear")]
+        public int DAyear { get; set; }
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class FullBatchUpdateDTO
+    {
+        [JsonPropertyName("batchID")]
+        public int BatchID { get; set; }
+
+        [JsonPropertyName("itemID")]
+        public int ItemID { get; set; }
+
+        [JsonPropertyName("itemName")]
+        public string ItemName { get; set; } = string.Empty;
+
+        [JsonPropertyName("category")]
+        public string Category { get; set; } = string.Empty;
+
+        [JsonPropertyName("price")]
+        public decimal Price { get; set; }
+
+        [JsonPropertyName("quantity")]
+        public int Quantity { get; set; }
+
+        [JsonPropertyName("utDmonth")]
+        public int UTDmonth { get; set; }
+
+        [JsonPropertyName("utDday")]
+        public int UTDday { get; set; }
+
+        [JsonPropertyName("utDyear")]
         public int UTDyear { get; set; }
     }
 
-    public class SpecificBatchStockOutDTO
+    public class SpecificStockOutDTO
     {
+        [JsonPropertyName("batchID")]
         public int BatchID { get; set; }
-        public int QuantityToDeduct { get; set; }
+        
+        [JsonPropertyName("quantity")]
+        public int Quantity { get; set; }
     }
-}       
+}

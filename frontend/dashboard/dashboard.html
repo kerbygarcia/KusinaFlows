@@ -112,33 +112,22 @@
     <div class="modal-content">
       <h2 id="stockModalTitle">Stock Transaction</h2>
       <form id="stockForm">
-          <h3 id="stockModalTitle">Stock-Out Transaction</h3>
+        <select id="stockItemSelect" required></select>
+        
+        <div id="batchSelectContainer" style="display: none; margin-bottom: 15px;">
+          <label for="stockBatchSelect" style="font-weight: bold; display: block; margin-bottom: 5px;">Select Deductible Batch Source</label>
+          <select id="stockBatchSelect" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;"></select>
+        </div>
 
-          <label>Category:</label>
-          <select id="stockCategorySelect" required>
-              <option value="" disabled selected>Pumili ng Kategorya...</option>
-          </select>
+        <input type="number" id="stockQuantity" placeholder="Quantity" required>
+        
+        <label id="stockUTDLabel">Use-Thru-Date</label>
+        <input type="date" id="stockUTD">
 
-          <label>Item Name:</label>
-          <select id="stockItemSelect" required disabled>
-              <option value="" disabled selected>Pumili muna ng Kategorya...</option>
-          </select>
-
-          <label id="stockBatchLabel">Available Batch:</label>
-          <select id="stockBatchSelect" required disabled>
-              <option value="" disabled selected>Pumili muna ng Item...</option>
-          </select>
-
-          <label id="stockUTDLabel">Use-Thru-Date (Expiry):</label>
-          <input type="date" id="stockUTD">
-
-          <label>Quantity:</label>
-          <input type="number" id="stockQuantity" min="1" required placeholder="Ilan ang ibabawas o idadagdag?">
-
-          <div class="modal-actions">
-              <button type="submit" class="btn-confirm">Confirm</button>
-              <button type="button" id="closeStockModal" class="btn-cancel">Cancel</button>
-          </div>
+        <div class="modal-buttons">
+          <button type="submit">Submit</button>
+          <button type="button" id="closeStockModal">Cancel</button>
+        </div>
       </form>
     </div>
   </div>
