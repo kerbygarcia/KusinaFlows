@@ -1,49 +1,51 @@
+// ============================================================================
+// CONFIGURATION & GLOBAL STATE MANAGER
+// ============================================================================
 const API_BASE_URL = "http://localhost:5244/api"; 
 
 let rawInventory = []; 
 let inventoryGroups = []; 
-let currentTransactionType = ""; // Tracks 'In' or 'Out'
+let currentTransactionType = ""; // Tracks 'IN' or 'OUT'
+let currentFilterMode = "DEFAULT"; // Tracks 'DEFAULT' or 'LOW_STOCK'
 
-// ADD THIS: Track current filter state ('DEFAULT' or 'LOW_STOCK')
-let currentFilterMode = "DEFAULT";
-
-// DOM Elements
+// DOM Elements - Core Layout
 const inventoryTableBody = document.getElementById("inventoryTableBody");
 const totalItems = document.getElementById("totalItems");
 const inventoryValue = document.getElementById("inventoryValue");
 const searchInput = document.getElementById("searchInput");
 const showUnavailableCheckbox = document.getElementById("showUnavailableCheckbox");
-const showUnavailableCheckbox = document.getElementById("showUnavailableCheckbox");
 
-// Modals & Forms
+// Modals & Forms - Item Mutations
 const itemModal = document.getElementById("itemModal");
 const itemForm = document.getElementById("itemForm");
 const modalTitle = document.getElementById("modalTitle");
 const closeModal = document.getElementById("closeModal");
 
+// Modals & Forms - Stock Adjustments
 const stockModal = document.getElementById("stockModal");
 const stockForm = document.getElementById("stockForm");
 const stockModalTitle = document.getElementById("stockModalTitle");
 const stockItemSelect = document.getElementById("stockItemSelect");
+const stockBatchSelect = document.getElementById("stockBatchSelect");
 const stockUTD = document.getElementById("stockUTD");
 const stockUTDLabel = document.getElementById("stockUTDLabel");
 const closeStockModal = document.getElementById("closeStockModal");
 
-// Topbar Action Buttons
+// Topbar Action Trigger Interceptors
 const addItemBtn = document.getElementById("addItemBtn");
 const stockInBtn = document.getElementById("stockInBtn");
 const stockOutBtn = document.getElementById("stockOutBtn");
 const lowStockBtn = document.getElementById("lowStockBtn");
 
-// Sidebar Navigation Items
+// Sidebar Navigation Control Mappings
 const reportsBtn = document.getElementById("reportsBtn");
 const financialBtn = document.getElementById("financialBtn");
 const stockHistoryBtn = document.getElementById("stockHistoryBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-// ==========================================
+// ============================================================================
 // INITIALIZATION & CORE DATA FETCH (READ)
-// ==========================================
+// ============================================================================
 async function initializeDashboard() {
     try {
         const response = await fetch(`${API_BASE_URL}/inventory`);
@@ -119,11 +121,12 @@ function groupInventoryData() {
     inventoryGroups = groupedArray;
 }
 
-// Change the default parameter logic to look at your tracking state
+// ============================================================================
+// DYNAMIC COMPONENT RENDER ENGINE
+// ============================================================================
 function renderInventory(filteredGroups = null) {
     if (!inventoryTableBody) return;
     
-    // If no explicit array was passed, determine what to show based on currentFilterMode
     if (filteredGroups === null) {
         if (currentFilterMode === "LOW_STOCK") {
             filteredGroups = getLowStockGroups();
@@ -133,7 +136,6 @@ function renderInventory(filteredGroups = null) {
     }
     
     inventoryTableBody.innerHTML = "";
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -148,14 +150,11 @@ function renderInventory(filteredGroups = null) {
             qtyColor = "background: #fdadb2; color: #721c24;";
         } else if (totalQty <= 5) {
             qtyLabel = "Low Quantity";
-            qtyLabel = "Low Quantity";
             qtyColor = "background: #ffe0e3; color: #ff4757;";
         } else if (totalQty > 15) {
             qtyLabel = "High Quantity";
-            qtyLabel = "High Quantity";
             qtyColor = "background: #d4edda; color: #28a745;";
         } else {
-            qtyLabel = "Moderate Quantity";
             qtyLabel = "Moderate Quantity";
             qtyColor = "background: #fff3cd; color: #856404;";
         }
@@ -259,9 +258,6 @@ function renderInventory(filteredGroups = null) {
                                     else if (b.quantity <= 5) { bQtyLabel = "Low Quantity"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
                                     else if (b.quantity > 15) { bQtyLabel = "High Quantity"; bQtyColor = "background: #d4edda; color: #28a745;"; }
                                     else { bQtyLabel = "Moderate Quantity"; bQtyColor = "background: #fff3cd; color: #856404;"; }
-                                    else if (b.quantity <= 5) { bQtyLabel = "Low Quantity"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
-                                    else if (b.quantity > 15) { bQtyLabel = "High Quantity"; bQtyColor = "background: #d4edda; color: #28a745;"; }
-                                    else { bQtyLabel = "Moderate Quantity"; bQtyColor = "background: #fff3cd; color: #856404;"; }
 
                                     const batchRowStyle = !b.available 
                                         ? `style="border-bottom: 1px solid #eee; font-size: 13px; background-color: #ffd6d6; color: #721c24;"` 
@@ -304,13 +300,6 @@ function renderInventory(filteredGroups = null) {
     updateMetrics();
 }
 
-if (showUnavailableCheckbox) {
-    showUnavailableCheckbox.addEventListener("change", () => {
-        groupInventoryData();
-        renderInventory();
-    });
-}
-
 function updateMetrics() {
     if (totalItems) {
         totalItems.textContent = inventoryGroups.filter(g => g.anyAvailable).length;
@@ -338,7 +327,6 @@ function populateStockDropdown() {
     const itemTracker = new Set();
     rawInventory.forEach(row => {
         if (row.available && !itemTracker.has(row.itemName)) {
-        if (row.available && !itemTracker.has(row.itemName)) {
             itemTracker.add(row.itemName);
             const opt = document.createElement("option");
             opt.value = row.itemID;
@@ -351,9 +339,9 @@ function populateStockDropdown() {
     });
 }
 
-// ==========================================
-// INTERACTIVE WINDOW SCOPED BUTTON CLICKS
-// ==========================================
+// ============================================================================
+// WINDOW-SCOPED GLOBAL DOM INTERACTION TRIGGERS
+// ============================================================================
 window.toggleExpand = function(groupName) {
     const group = inventoryGroups.find(g => g.name === groupName);
     if (group) {
@@ -372,7 +360,6 @@ window.editItemGroup = function(batchId) {
     
     document.getElementById("editBatchId").value = batchId;
     document.getElementById("editItemId").value = targetBatch.itemID;
-
     document.getElementById("itemName").value = targetBatch.itemName;
     document.getElementById("itemQuantity").value = targetBatch.quantity;
     document.getElementById("itemCategory").value = targetBatch.category;
@@ -395,7 +382,6 @@ window.editItemGroup = function(batchId) {
 
 window.deleteBatchRow = async function(batchId) {
     if (!confirm(`Are you sure you want to delete Batch #${batchId}?`)) {
-    if (!confirm(`Are you sure you want to delete Batch #${batchId}?`)) {
         return; 
     }
 
@@ -413,17 +399,48 @@ window.deleteBatchRow = async function(batchId) {
 
         console.log(`Batch ${batchId} deleted successfully.`);
         await initializeDashboard();
-
     } catch (error) {
         console.error("Delete handler error:", error);
-        alert("The deletion could not be executed: " + error.message);
         alert("The deletion could not be executed: " + error.message);
     }
 };
 
-// ==========================================
-// CREATE & UPDATE FORM ACTIONS
-// ==========================================
+window.deleteEntireItem = async function(itemName) {
+    if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
+        return;
+    }
+
+    const group = inventoryGroups.find(g => g.name === itemName);
+    if (!group || group.batches.length === 0) {
+        alert("Could not locate underlying batches for this product asset.");
+        return;
+    }
+
+    console.log(`Starting cascade soft-delete for all batches under: ${itemName}`);
+
+    try {
+        const deletePromises = group.batches.map(batch => 
+            fetch(`${API_BASE_URL}/inventory/delete/${batch.batchID}`, { method: "DELETE" })
+        );
+
+        const responses = await Promise.all(deletePromises);
+        const allSuccessful = responses.every(res => res.ok);
+
+        if (!allSuccessful) {
+            throw new Error("Some batches failed to update structural integrity status.");
+        }
+
+        console.log(`All batches for "${itemName}" successfully marked unavailable.`);
+        await initializeDashboard();
+    } catch (error) {
+        console.error("Cascade delete failure:", error);
+        alert("Error executing item removal: " + error.message);
+    }
+};
+
+// ============================================================================
+// MUTATION SUBMIT ACTIONS (CREATE / UPDATE)
+// ============================================================================
 itemForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -508,29 +525,12 @@ stockForm.addEventListener("submit", async (e) => {
     const qty = parseInt(document.getElementById("stockQuantity").value);
 
     if (currentTransactionType === "IN") {
-        // Safe, functional, untouched Stock-In handling
-        // Safe, functional, untouched Stock-In handling
         const payload = {
             itemID: itemId,
             itemName: selectedOption.dataset.name,
             category: selectedOption.dataset.category,
             price: parseFloat(selectedOption.dataset.price),
             quantity: qty,
-            status: "Fresh Stock"
-        };
-        
-        const utdValue = stockUTD.value;
-        if (utdValue) {
-            const utdDate = new Date(utdValue);
-            payload.utDmonth = utdDate.getMonth() + 1;
-            payload.utDday = utdDate.getDate();
-            payload.utDyear = utdDate.getFullYear();
-        }
-
-        const today = new Date();
-        payload.dAmonth = today.getMonth() + 1;
-        payload.dAday = today.getDate();
-        payload.dAyear = today.getFullYear();
             status: "Fresh Stock"
         };
         
@@ -554,39 +554,13 @@ stockForm.addEventListener("submit", async (e) => {
                 body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error("Stock-In action failed on backend.");
-            if (!response.ok) throw new Error("Stock-In action failed on backend.");
             closeStockModalWindow();
             await initializeDashboard();
         } catch (error) {
             alert(error.message);
         }
         
-        
     } else if (currentTransactionType === "OUT") {
-        const stockBatchSelect = document.getElementById("stockBatchSelect");
-        const selectedBatchOption = stockBatchSelect.options[stockBatchSelect.selectedIndex];
-        
-        if (!selectedBatchOption || !selectedBatchOption.value) {
-            alert("Please select a specific batch to deduct from.");
-            return;
-        }
-
-        const batchId = parseInt(selectedBatchOption.value);
-        const maxAvailable = parseInt(selectedBatchOption.dataset.maxQty);
-
-        if (qty > maxAvailable) {
-            alert(`Cannot deduct ${qty} items. This batch only has ${maxAvailable} available.`);
-            return;
-        }
-
-        const payload = {
-            batchID: batchId,
-            quantity: qty
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/inventory/stock-out-specific`, {
-        const stockBatchSelect = document.getElementById("stockBatchSelect");
         const selectedBatchOption = stockBatchSelect.options[stockBatchSelect.selectedIndex];
         
         if (!selectedBatchOption || !selectedBatchOption.value) {
@@ -612,12 +586,10 @@ stockForm.addEventListener("submit", async (e) => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.message || "Deduction failed.");
                 throw new Error(err.message || "Deduction failed.");
             }
             
@@ -629,9 +601,32 @@ stockForm.addEventListener("submit", async (e) => {
     }
 });
 
-// ==========================================
-// MODAL DISPLAY TOGGLE UTILITIES
-// ==========================================
+// ============================================================================
+// DYNAMIC CONDITIONAL DROPDOWN OPTIONS DATA INJECTION
+// ============================================================================
+stockItemSelect.addEventListener("change", () => {
+    const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
+    const targetItemName = selectedOption.dataset.name;
+    
+    if (!stockBatchSelect) return;
+    stockBatchSelect.innerHTML = '<option value="" disabled selected>Select an active batch...</option>';
+
+    if (currentTransactionType === "OUT") {
+        const activeBatches = rawInventory.filter(row => row.itemName === targetItemName && row.available && row.quantity > 0);
+
+        activeBatches.forEach(batch => {
+            const opt = document.createElement("option");
+            opt.value = batch.batchID;
+            opt.textContent = `Batch #${batch.batchID} (Qty: ${batch.quantity} - Exp: ${batch.utDmonth}/${batch.utDday}/${batch.utDyear})`;
+            opt.dataset.maxQty = batch.quantity;
+            stockBatchSelect.appendChild(opt);
+        });
+    }
+});
+
+// ============================================================================
+// UI WINDOW TOGGLE HANDLERS
+// ============================================================================
 addItemBtn.addEventListener("click", () => {
     modalTitle.textContent = "Add Inventory Item";
     itemForm.reset();
@@ -651,11 +646,7 @@ stockInBtn.addEventListener("click", () => {
     stockForm.reset();
     
     document.getElementById("batchSelectContainer").style.display = "none";
-    document.getElementById("stockBatchSelect").removeAttribute("required");
-    
-    
-    document.getElementById("batchSelectContainer").style.display = "none";
-    document.getElementById("stockBatchSelect").removeAttribute("required");
+    stockBatchSelect.removeAttribute("required");
     
     stockUTD.style.display = "block";
     stockUTD.setAttribute("required", "true");
@@ -666,15 +657,10 @@ stockInBtn.addEventListener("click", () => {
 stockOutBtn.addEventListener("click", () => {
     currentTransactionType = "OUT";
     stockModalTitle.textContent = "Stock-Out Transaction (Deduct Specific Batch)";
-    stockModalTitle.textContent = "Stock-Out Transaction (Deduct Specific Batch)";
     stockForm.reset();
     
     document.getElementById("batchSelectContainer").style.display = "block";
-    document.getElementById("stockBatchSelect").setAttribute("required", "true");
-    
-    
-    document.getElementById("batchSelectContainer").style.display = "block";
-    document.getElementById("stockBatchSelect").setAttribute("required", "true");
+    stockBatchSelect.setAttribute("required", "true");
     
     stockUTD.style.display = "none";
     stockUTD.removeAttribute("required");
@@ -688,62 +674,50 @@ function closeStockModalWindow() { stockModal.classList.add("hidden"); }
 closeModal.addEventListener("click", closeItemModalWindow);
 closeStockModal.addEventListener("click", closeStockModalWindow);
 
-// Add a global tracking state variable at the top of your file with the other variables
-let isLowStockFilterActive = false; 
-
-// ==========================================
-// AUXILIARY SIDEBAR & FILTER BUTTON ACTIONS
-// ==========================================
-// Helper function to extract and map out precise low stock items safely
+// ============================================================================
+// FILTERS & SEARCH EXECUTION PIPELINES
+// ============================================================================
 function getLowStockGroups() {
     return inventoryGroups.map(group => {
-        // Isolate low-stock batches inside the expandable group window
         const lowStockBatches = group.batches.filter(b => b.quantity <= 5);
-        
         return {
             ...group,
             batches: lowStockBatches,
-            // Keep user expanded configuration state or let it dynamically show data cascades
             expanded: group.expanded 
         };
     }).filter(group => {
-        // Sum total active quantity safely
         const totalQty = group.batches.reduce((sum, b) => sum + b.quantity, 0);
         return totalQty <= 5 && group.batches.length > 0;
     });
 }
 
-// ==========================================
-// AUXILIARY SIDEBAR & FILTER BUTTON ACTIONS
-// ==========================================
 lowStockBtn.addEventListener("click", () => {
     if (currentFilterMode === "DEFAULT") {
-        // Switch context mode to Low Stock view
         currentFilterMode = "LOW_STOCK";
         
-        // Force expand item lines so user can instantly see actionable batches
         inventoryGroups.forEach(g => {
             const hasLowStock = g.batches.some(b => b.quantity <= 5);
             if (hasLowStock) g.expanded = true;
         });
 
         renderInventory();
-        
-        // Toggle button look and text
         lowStockBtn.textContent = "Back to Default";
         lowStockBtn.style.background = "#ffa502"; 
     } else {
-        // Return context state to Default main table view
         currentFilterMode = "DEFAULT";
-        
         groupInventoryData(); 
         renderInventory();
-        
-        // Restore standard button structures
         lowStockBtn.textContent = "Low Stock Items";
         lowStockBtn.style.background = ""; 
     }
 });
+
+if (showUnavailableCheckbox) {
+    showUnavailableCheckbox.addEventListener("change", () => {
+        groupInventoryData();
+        renderInventory();
+    });
+}
 
 searchInput.addEventListener("keyup", () => {
     const term = searchInput.value.toLowerCase();
@@ -753,110 +727,25 @@ searchInput.addEventListener("keyup", () => {
     renderInventory(matches);
 });
 
+// ============================================================================
+// AUXILIARY SIDEBAR ROUTING SIMULATION STUBS
+// ============================================================================
 reportsBtn.addEventListener("click", () => alert("Generating Operational Summary Reports..."));
 financialBtn.addEventListener("click", () => alert("Loading Financial Cashflows and Assets Analytics Ledger..."));
 stockHistoryBtn.addEventListener("click", () => alert("Opening Historical Transaction Logging Records..."));
 
 if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-        // 1. Show native browser confirmation window
-        const confirmLogout = confirm("Are you sure you want to log out of KusinaFlow?");
-        
-        if (confirmLogout) {
-            // 1. Clear session variables
+        if (confirm("Are you sure you want to log out of KusinaFlow?")) {
             localStorage.clear();
             sessionStorage.clear();
-            
-            // 2. Clear token indicators (example authentication flag)
             localStorage.setItem("isLoggedIn", "false");
-            
-            // 3. Destructive redirect (replaces dashboard in the history stack)
             window.location.replace("../login/login.html"); 
         }
     });
 }
-// ==========================================
-// DELETE ENTIRE ITEM GROUP (ALL BATCHES)
-// ==========================================
-window.deleteEntireItem = async function(itemName) {
-    if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
-    if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
-        return;
-    }
 
-    const group = inventoryGroups.find(g => g.name === itemName);
-    if (!group || group.batches.length === 0) {
-        alert("Could not locate underlying batches for this product asset.");
-        alert("Could not locate underlying batches for this product asset.");
-        return;
-    }
-
-    console.log(`Starting cascade soft-delete for all batches under: ${itemName}`);
-
-    try {
-        const deletePromises = group.batches.map(batch => 
-            fetch(`${API_BASE_URL}/inventory/delete/${batch.batchID}`, { method: "DELETE" })
-        );
-
-        const responses = await Promise.all(deletePromises);
-        const allSuccessful = responses.every(res => res.ok);
-
-        if (!allSuccessful) {
-            throw new Error("Some batches failed to update structural integrity status.");
-            throw new Error("Some batches failed to update structural integrity status.");
-        }
-
-        console.log(`All batches for "${itemName}" successfully marked unavailable.`);
-        await initializeDashboard();
-        await initializeDashboard();
-
-    } catch (error) {
-        console.error("Cascade delete failure:", error);
-        alert("Error executing item removal: " + error.message);
-    }
-};
-
-stockItemSelect.addEventListener("change", () => {
-    const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
-    const targetItemName = selectedOption.dataset.name;
-    const stockBatchSelect = document.getElementById("stockBatchSelect");
-    
-    if (!stockBatchSelect) return;
-    stockBatchSelect.innerHTML = '<option value="" disabled selected>Select an active batch...</option>';
-
-    if (currentTransactionType === "OUT") {
-        const activeBatches = rawInventory.filter(row => row.itemName === targetItemName && row.available && row.quantity > 0);
-
-        activeBatches.forEach(batch => {
-            const opt = document.createElement("option");
-            opt.value = batch.batchID;
-            opt.textContent = `Batch #${batch.batchID} (Qty: ${batch.quantity} - Exp: ${batch.utDmonth}/${batch.utDday}/${batch.utDyear})`;
-            opt.dataset.maxQty = batch.quantity;
-            stockBatchSelect.appendChild(opt);
-        });
-    }
-});
-
-stockItemSelect.addEventListener("change", () => {
-    const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
-    const targetItemName = selectedOption.dataset.name;
-    const stockBatchSelect = document.getElementById("stockBatchSelect");
-    
-    if (!stockBatchSelect) return;
-    stockBatchSelect.innerHTML = '<option value="" disabled selected>Select an active batch...</option>';
-
-    if (currentTransactionType === "OUT") {
-        const activeBatches = rawInventory.filter(row => row.itemName === targetItemName && row.available && row.quantity > 0);
-
-        activeBatches.forEach(batch => {
-            const opt = document.createElement("option");
-            opt.value = batch.batchID;
-            opt.textContent = `Batch #${batch.batchID} (Qty: ${batch.quantity} - Exp: ${batch.utDmonth}/${batch.utDday}/${batch.utDyear})`;
-            opt.dataset.maxQty = batch.quantity;
-            stockBatchSelect.appendChild(opt);
-        });
-    }
-});
-
-// Run Init on Page Boot
+// ============================================================================
+// RUN PROGRAM BOOTSTRAP INITIALIZATION
+// ============================================================================
 document.addEventListener("DOMContentLoaded", initializeDashboard);
