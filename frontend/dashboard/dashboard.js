@@ -13,6 +13,7 @@ const totalItems = document.getElementById("totalItems");
 const inventoryValue = document.getElementById("inventoryValue");
 const searchInput = document.getElementById("searchInput");
 const showUnavailableCheckbox = document.getElementById("showUnavailableCheckbox");
+const showUnavailableCheckbox = document.getElementById("showUnavailableCheckbox");
 
 // Modals & Forms
 const itemModal = document.getElementById("itemModal");
@@ -147,11 +148,14 @@ function renderInventory(filteredGroups = null) {
             qtyColor = "background: #fdadb2; color: #721c24;";
         } else if (totalQty <= 5) {
             qtyLabel = "Low Quantity";
+            qtyLabel = "Low Quantity";
             qtyColor = "background: #ffe0e3; color: #ff4757;";
         } else if (totalQty > 15) {
             qtyLabel = "High Quantity";
+            qtyLabel = "High Quantity";
             qtyColor = "background: #d4edda; color: #28a745;";
         } else {
+            qtyLabel = "Moderate Quantity";
             qtyLabel = "Moderate Quantity";
             qtyColor = "background: #fff3cd; color: #856404;";
         }
@@ -255,6 +259,9 @@ function renderInventory(filteredGroups = null) {
                                     else if (b.quantity <= 5) { bQtyLabel = "Low Quantity"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
                                     else if (b.quantity > 15) { bQtyLabel = "High Quantity"; bQtyColor = "background: #d4edda; color: #28a745;"; }
                                     else { bQtyLabel = "Moderate Quantity"; bQtyColor = "background: #fff3cd; color: #856404;"; }
+                                    else if (b.quantity <= 5) { bQtyLabel = "Low Quantity"; bQtyColor = "background: #ffe0e3; color: #ff4757;"; }
+                                    else if (b.quantity > 15) { bQtyLabel = "High Quantity"; bQtyColor = "background: #d4edda; color: #28a745;"; }
+                                    else { bQtyLabel = "Moderate Quantity"; bQtyColor = "background: #fff3cd; color: #856404;"; }
 
                                     const batchRowStyle = !b.available 
                                         ? `style="border-bottom: 1px solid #eee; font-size: 13px; background-color: #ffd6d6; color: #721c24;"` 
@@ -331,6 +338,7 @@ function populateStockDropdown() {
     const itemTracker = new Set();
     rawInventory.forEach(row => {
         if (row.available && !itemTracker.has(row.itemName)) {
+        if (row.available && !itemTracker.has(row.itemName)) {
             itemTracker.add(row.itemName);
             const opt = document.createElement("option");
             opt.value = row.itemID;
@@ -387,6 +395,7 @@ window.editItemGroup = function(batchId) {
 
 window.deleteBatchRow = async function(batchId) {
     if (!confirm(`Are you sure you want to delete Batch #${batchId}?`)) {
+    if (!confirm(`Are you sure you want to delete Batch #${batchId}?`)) {
         return; 
     }
 
@@ -407,6 +416,7 @@ window.deleteBatchRow = async function(batchId) {
 
     } catch (error) {
         console.error("Delete handler error:", error);
+        alert("The deletion could not be executed: " + error.message);
         alert("The deletion could not be executed: " + error.message);
     }
 };
@@ -499,12 +509,28 @@ stockForm.addEventListener("submit", async (e) => {
 
     if (currentTransactionType === "IN") {
         // Safe, functional, untouched Stock-In handling
+        // Safe, functional, untouched Stock-In handling
         const payload = {
             itemID: itemId,
             itemName: selectedOption.dataset.name,
             category: selectedOption.dataset.category,
             price: parseFloat(selectedOption.dataset.price),
             quantity: qty,
+            status: "Fresh Stock"
+        };
+        
+        const utdValue = stockUTD.value;
+        if (utdValue) {
+            const utdDate = new Date(utdValue);
+            payload.utDmonth = utdDate.getMonth() + 1;
+            payload.utDday = utdDate.getDate();
+            payload.utDyear = utdDate.getFullYear();
+        }
+
+        const today = new Date();
+        payload.dAmonth = today.getMonth() + 1;
+        payload.dAday = today.getDate();
+        payload.dAyear = today.getFullYear();
             status: "Fresh Stock"
         };
         
@@ -528,13 +554,38 @@ stockForm.addEventListener("submit", async (e) => {
                 body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error("Stock-In action failed on backend.");
+            if (!response.ok) throw new Error("Stock-In action failed on backend.");
             closeStockModalWindow();
             await initializeDashboard();
         } catch (error) {
             alert(error.message);
         }
         
+        
     } else if (currentTransactionType === "OUT") {
+        const stockBatchSelect = document.getElementById("stockBatchSelect");
+        const selectedBatchOption = stockBatchSelect.options[stockBatchSelect.selectedIndex];
+        
+        if (!selectedBatchOption || !selectedBatchOption.value) {
+            alert("Please select a specific batch to deduct from.");
+            return;
+        }
+
+        const batchId = parseInt(selectedBatchOption.value);
+        const maxAvailable = parseInt(selectedBatchOption.dataset.maxQty);
+
+        if (qty > maxAvailable) {
+            alert(`Cannot deduct ${qty} items. This batch only has ${maxAvailable} available.`);
+            return;
+        }
+
+        const payload = {
+            batchID: batchId,
+            quantity: qty
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/inventory/stock-out-specific`, {
         const stockBatchSelect = document.getElementById("stockBatchSelect");
         const selectedBatchOption = stockBatchSelect.options[stockBatchSelect.selectedIndex];
         
@@ -561,10 +612,12 @@ stockForm.addEventListener("submit", async (e) => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const err = await response.json();
+                throw new Error(err.message || "Deduction failed.");
                 throw new Error(err.message || "Deduction failed.");
             }
             
@@ -600,6 +653,10 @@ stockInBtn.addEventListener("click", () => {
     document.getElementById("batchSelectContainer").style.display = "none";
     document.getElementById("stockBatchSelect").removeAttribute("required");
     
+    
+    document.getElementById("batchSelectContainer").style.display = "none";
+    document.getElementById("stockBatchSelect").removeAttribute("required");
+    
     stockUTD.style.display = "block";
     stockUTD.setAttribute("required", "true");
     stockUTDLabel.style.display = "block";
@@ -609,7 +666,12 @@ stockInBtn.addEventListener("click", () => {
 stockOutBtn.addEventListener("click", () => {
     currentTransactionType = "OUT";
     stockModalTitle.textContent = "Stock-Out Transaction (Deduct Specific Batch)";
+    stockModalTitle.textContent = "Stock-Out Transaction (Deduct Specific Batch)";
     stockForm.reset();
+    
+    document.getElementById("batchSelectContainer").style.display = "block";
+    document.getElementById("stockBatchSelect").setAttribute("required", "true");
+    
     
     document.getElementById("batchSelectContainer").style.display = "block";
     document.getElementById("stockBatchSelect").setAttribute("required", "true");
@@ -718,11 +780,13 @@ if (logoutBtn) {
 // ==========================================
 window.deleteEntireItem = async function(itemName) {
     if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
+    if (!confirm(`Are you sure you want to delete all batch records for "${itemName}"?`)) {
         return;
     }
 
     const group = inventoryGroups.find(g => g.name === itemName);
     if (!group || group.batches.length === 0) {
+        alert("Could not locate underlying batches for this product asset.");
         alert("Could not locate underlying batches for this product asset.");
         return;
     }
@@ -739,9 +803,11 @@ window.deleteEntireItem = async function(itemName) {
 
         if (!allSuccessful) {
             throw new Error("Some batches failed to update structural integrity status.");
+            throw new Error("Some batches failed to update structural integrity status.");
         }
 
         console.log(`All batches for "${itemName}" successfully marked unavailable.`);
+        await initializeDashboard();
         await initializeDashboard();
 
     } catch (error) {
@@ -749,6 +815,27 @@ window.deleteEntireItem = async function(itemName) {
         alert("Error executing item removal: " + error.message);
     }
 };
+
+stockItemSelect.addEventListener("change", () => {
+    const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
+    const targetItemName = selectedOption.dataset.name;
+    const stockBatchSelect = document.getElementById("stockBatchSelect");
+    
+    if (!stockBatchSelect) return;
+    stockBatchSelect.innerHTML = '<option value="" disabled selected>Select an active batch...</option>';
+
+    if (currentTransactionType === "OUT") {
+        const activeBatches = rawInventory.filter(row => row.itemName === targetItemName && row.available && row.quantity > 0);
+
+        activeBatches.forEach(batch => {
+            const opt = document.createElement("option");
+            opt.value = batch.batchID;
+            opt.textContent = `Batch #${batch.batchID} (Qty: ${batch.quantity} - Exp: ${batch.utDmonth}/${batch.utDday}/${batch.utDyear})`;
+            opt.dataset.maxQty = batch.quantity;
+            stockBatchSelect.appendChild(opt);
+        });
+    }
+});
 
 stockItemSelect.addEventListener("change", () => {
     const selectedOption = stockItemSelect.options[stockItemSelect.selectedIndex];
