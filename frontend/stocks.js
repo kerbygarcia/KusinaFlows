@@ -1,11 +1,38 @@
 // load inventory from localStorage
 let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
-let stockHistory = [];
+let stockHistory = JSON.parse(localStorage.getItem("stockHistory")) || [];
 
 
 let editingItemId = null;
 let currentStockAction = "";
 let currentView = inventory;
+
+// user approval helper
+function setupApprovalInputs() {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || { name: "Chef Kiko", role: "Manager" };
+  const itemSection = document.getElementById("itemApprovalSection");
+  const itemApprover = document.getElementById("itemApprover");
+  const stockSection = document.getElementById("stockApprovalSection");
+  const stockApprover = document.getElementById("stockApprover");
+
+  if (currentUser.role === "Employee") {
+    if (itemSection) itemSection.classList.remove("hidden");
+    if (itemApprover) itemApprover.required = true;
+    if (stockSection) stockSection.classList.remove("hidden");
+    if (stockApprover) stockApprover.required = true;
+  } else {
+    if (itemSection) itemSection.classList.add("hidden");
+    if (itemApprover) {
+      itemApprover.required = false;
+      itemApprover.value = "";
+    }
+    if (stockSection) stockSection.classList.add("hidden");
+    if (stockApprover) {
+      stockApprover.required = false;
+      stockApprover.value = "";
+    }
+  }
+}
 let isLowStockView = false;
 
 
@@ -166,6 +193,7 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   editingItemId = null;
   modalTitle.textContent = "Add Item";
   itemForm.reset();
+  setupApprovalInputs();
   itemModal.classList.remove("hidden");
 });
 
@@ -205,6 +233,11 @@ itemForm.addEventListener("submit", e => {
   }
 
 
+  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || { name: "Chef Kiko", role: "Manager" };
+  const approver = currentUser.role === "Manager" ? currentUser.name : document.getElementById("itemApprover").value.trim();
+  const now = new Date();
+
+
   if (editingItemId === null) {
     inventory.push({
       id: Date.now(),
@@ -214,6 +247,18 @@ itemForm.addEventListener("submit", e => {
       expanded: false,
       batches: [{ quantity: qty, utd }]
     });
+
+    // Log the Item Added activity
+    stockHistory.unshift({
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+      item: name,
+      type: "Item Added",
+      qty: qty,
+      user: currentUser.name,
+      approvedBy: approver
+    });
+    localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
   } else {
     const item = inventory.find(i => i.id === editingItemId);
     item.name = name;
@@ -271,6 +316,7 @@ document.getElementById("stockInBtn").addEventListener("click", () => {
   currentStockAction = "in";
   stockModalTitle.textContent = "Stock-In";
   populateDropdown();
+  setupApprovalInputs();
   stockModal.classList.remove("hidden");
 });
 
@@ -279,6 +325,7 @@ document.getElementById("stockOutBtn").addEventListener("click", () => {
   currentStockAction = "out";
   stockModalTitle.textContent = "Stock-Out";
   populateDropdown();
+  setupApprovalInputs();
   stockModal.classList.remove("hidden");
 });
 
@@ -338,10 +385,36 @@ stockForm.addEventListener("submit", e => {
   }
 
 
+  const now = new Date();
+
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || { name: "Chef Kiko", role: "Manager" };
+  const approver = currentUser.role === "Manager" ? currentUser.name : document.getElementById("stockApprover").value.trim();
+
+
   if (currentStockAction === "in") {
+    if (!item.batches) item.batches = [];
     item.batches.push({ quantity: qty, utd });
     item.batches.sort((a, b) => new Date(a.utd) - new Date(b.utd));
+
+
+    stockHistory.unshift({
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+      item: item.name,
+      type: "Stock-In",
+      qty,
+      user: currentUser.name,
+      approvedBy: approver
+    });
   } else {
+    const totalAvailable = getTotalQuantity(item);
+    if (qty > totalAvailable) {
+      alert(`Cannot stock-out ${qty} items. Only ${totalAvailable} items are available in stock.`);
+      return;
+    }
+
+
     let remaining = qty;
 
 
@@ -363,11 +436,23 @@ stockForm.addEventListener("submit", e => {
 
 
     item.batches = item.batches.filter(b => b.quantity > 0);
+
+
+    stockHistory.unshift({
+      date: now.toLocaleDateString(),
+      time: now.toLocaleTimeString(),
+      item: item.name,
+      type: "Stock-Out",
+      qty,
+      user: currentUser.name,
+      approvedBy: approver
+    });
   }
 
 
   stockModal.classList.add("hidden");
   saveData();
+  localStorage.setItem("stockHistory", JSON.stringify(stockHistory));
   renderInventory(inventory);
 });
 
@@ -409,5 +494,16 @@ document.getElementById("lowStockBtn").addEventListener("click", () => {
 
 
 // init
-renderInventory();
+function initPage() {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || { name: "Chef Kiko", role: "Manager" };
+  const addItemBtn = document.getElementById("addItemBtn");
+  if (currentUser.role === "Employee") {
+    if (addItemBtn) addItemBtn.style.display = "none";
+  } else {
+    if (addItemBtn) addItemBtn.style.display = "";
+  }
+  renderInventory();
+}
+
+initPage();
 

@@ -14,8 +14,8 @@
   <!-- sidebar -->
   <aside class="sidebar">
     <div class="logo-section">
-      <h2>KusinaFlow</h2>
-      <p>Inventory Management</p>
+      <h2>kusinaflow</h2>
+      <p>Inventory management</p>
     </div>
 
 
@@ -94,6 +94,12 @@
         <input type="number" step="0.01" id="itemPrice" placeholder="Price" required>
         <input type="date" id="itemUTD" required>
 
+        <!-- Dynamic approval section (shown if staff) -->
+        <div id="itemApprovalSection" class="hidden" style="display: flex; flex-direction: column; width: 100%;">
+          <label style="font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold;">Manager Approval Required:</label>
+          <input type="text" id="itemApprover" placeholder="Approver Manager Name">
+        </div>
+
 
         <div class="modal-buttons">
           <button type="submit">Save Item</button>
@@ -120,6 +126,12 @@
         <select id="stockItemSelect" required></select>
         <input type="number" id="stockQuantity" placeholder="Quantity" required>
         <input type="date" id="stockUTD">
+
+        <!-- Dynamic approval section (shown if staff) -->
+        <div id="stockApprovalSection" class="hidden" style="display: flex; flex-direction: column; width: 100%;">
+          <label style="font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold;">Manager Approval Required:</label>
+          <input type="text" id="stockApprover" placeholder="Approver Manager Name">
+        </div>
 
 
         <div class="modal-buttons">
