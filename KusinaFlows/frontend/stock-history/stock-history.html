@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock History</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <h2>kusinaflow</h2>
+      <p>Inventory management</p>
+    </div>
+
+    <nav>
+      <ul>
+        <li id="dashboardBtn">Dashboard</li>
+        <li id="stocksBtn">Stocks</li>
+        <li id="reportBtn">Generate Reports</li>
+        <li id="stockHistoryBtn">Stock History</li>
+        <li id="logoutBtn">Log Out</li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- main content -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div>
+        <h1>Stock History</h1>
+        <p class="subtitle">Complete transaction log of stock activities</p>
+      </div>
+    </header>
+
+    <section class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Item Name</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Performed By</th>
+            <th>Approved By</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </section>
+
+  </main>
+  
+  <script src="../db.js"></script>
+  <script src="../nav.js"></script>
+  <script src="stock-history.js"></script>
+
+</body>
+</html>
