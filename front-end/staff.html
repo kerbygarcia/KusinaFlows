@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <h2>kusinaflow</h2>
+      <p>Inventory management</p>
+    </div>
+
+    <nav>
+      <ul>
+        <li id="dashboardBtn">Dashboard</li>
+        <li id="stocksBtn">Stocks</li>
+        <li id="reportBtn">Generate Reports</li>
+        <li id="stockHistoryBtn">Stock History</li>
+        <li id="logoutBtn">Log Out</li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- main content -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div>
+        <h1>Staff Management</h1>
+        <p class="subtitle">Manage user accounts, roles, and permissions</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="addStaffBtn">Add New Staff</button>
+      </div>
+    </header>
+
+    <!-- Filters Section -->
+    <section class="search-section" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
+      <input type="text" id="staffSearchInput" placeholder="Search by name or username..." style="flex: 2; min-width: 250px; padding: 14px; border-radius: 8px; border: 1px solid #ccc;">
+      
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="roleFilter" style="font-weight: bold; font-size: 14px; color: #555;">Role:</label>
+        <select id="roleFilter" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: white; font-size: 14px; cursor: pointer;">
+          <option value="all">All Roles</option>
+          <option value="Owner">Owner</option>
+          <option value="Admin">Admin</option>
+          <option value="Employee">Employee</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="statusFilter" style="font-weight: bold; font-size: 14px; color: #555;">Status:</label>
+        <select id="statusFilter" style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: white; font-size: 14px; cursor: pointer;">
+          <option value="all">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Quick Actions Panel -->
+    <div class="table-container" style="margin-bottom: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span id="selectedCount" style="font-size: 13px; font-weight: bold; color: #666;">0 staff selected</span>
+        <button id="bulkDeactivateBtn" class="delete-btn" style="padding: 6px 12px; font-size: 12px; display: none;">Bulk Deactivate</button>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button id="exportCsvBtn" style="background: #3b2a1a; padding: 8px 12px; font-size: 12px;">Export CSV</button>
+        <button id="printListBtn" style="background: #5a4d41; padding: 8px 12px; font-size: 12px;">Print List</button>
+        <button id="emergencyResetBtn" class="delete-btn" style="padding: 8px 12px; font-size: 12px;">Reset All Passwords</button>
+      </div>
+    </div>
+
+    <!-- Staff List Table -->
+    <section class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>Staff ID</th>
+            <th>Avatar</th>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Date Hired</th>
+            <th>Last Login</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="staffTableBody"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- Add / Edit Staff Modal -->
+  <div class="modal hidden" id="staffModal">
+    <div class="modal-content" style="width: 450px;">
+      <h2 id="staffModalTitle">Add New Staff</h2>
+      
+      <form id="staffForm">
+        <input type="text" id="staffFullName" placeholder="Full Name" required>
+        <input type="text" id="staffUsername" placeholder="Username" required>
+        <input type="password" id="staffPassword" placeholder="Password (required for new staff)">
+        
+        <div style="display: flex; flex-direction: column; width: 100%; margin-bottom: 15px;">
+          <label style="font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold;">Role Selection:</label>
+          <select id="staffRole" required style="padding: 12px; border-radius: 6px; border: 1px solid #ccc; width: 100%;">
+            <option value="Employee">Employee</option>
+            <option value="Admin">Admin</option>
+            <option value="Owner">Owner</option>
+          </select>
+        </div>
+
+        <input type="text" id="staffContactInfo" placeholder="Contact Info (Email/Phone)" required>
+        
+        <!-- Status Toggle -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; width: 100%; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+          <span style="font-size: 13px; font-weight: bold; color: #555;">Account Active Status:</span>
+          <label class="switch-container" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+            <input type="checkbox" id="staffStatusToggle" checked style="opacity: 0; width: 0; height: 0;">
+            <span class="slider" style="position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+          </label>
+        </div>
+
+        <!-- Profile Picture Upload -->
+        <div style="display: flex; flex-direction: column; width: 100%; margin-bottom: 20px;">
+          <label style="font-size: 12px; margin-bottom: 5px; color: #555; font-weight: bold;">Profile Picture:</label>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img id="staffAvatarPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b08a62'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="Preview" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+            <input type="file" id="staffProfilePicInput" accept="image/*" style="border: none; padding: 0; margin: 0; font-size: 12px; flex: 1;">
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="submit">Save Staff</button>
+          <button type="button" id="closeStaffModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Details Modal -->
+  <div class="modal hidden" id="detailsModal">
+    <div class="modal-content" style="width: 400px; text-align: center; padding: 35px 30px;">
+      <h2 style="margin-bottom: 10px;">Staff Details</h2>
+      
+      <div style="margin: 15px auto 25px auto; width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+        <img id="detailAvatar" src="" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+      </div>
+      
+      <h3 id="detailFullName" style="font-size: 20px; color: var(--dark); margin-bottom: 5px;">-</h3>
+      <p id="detailUsername" style="font-size: 14px; color: #777; margin-bottom: 15px;">@-</p>
+      
+      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 25px;">
+        <span id="detailRoleBadge" style="padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">-</span>
+        <span id="detailStatusBadge" style="padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">-</span>
+      </div>
+
+      <div style="text-align: left; background: #faf8f5; border-radius: 8px; padding: 15px; margin-bottom: 25px; border: 1px solid #f0e6d6;">
+        <div style="margin-bottom: 10px;"><strong style="font-size: 12px; color: #888;">Staff ID:</strong> <div id="detailId" style="font-weight: bold; color: var(--dark); margin-top: 2px;">-</div></div>
+        <div style="margin-bottom: 10px;"><strong style="font-size: 12px; color: #888;">Contact Info:</strong> <div id="detailContact" style="font-weight: bold; color: var(--dark); margin-top: 2px;">-</div></div>
+        <div style="margin-bottom: 10px;"><strong style="font-size: 12px; color: #888;">Date Hired:</strong> <div id="detailHired" style="font-weight: bold; color: var(--dark); margin-top: 2px;">-</div></div>
+        <div><strong style="font-size: 12px; color: #888;">Last Login:</strong> <div id="detailLogin" style="font-weight: bold; color: var(--dark); margin-top: 2px;">-</div></div>
+      </div>
+
+      <button type="button" id="closeDetailsModal" style="width: 100%; background: var(--dark);">Close Profile</button>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div class="modal hidden" id="passwordModal">
+    <div class="modal-content" style="width: 380px;">
+      <h2>Reset Password</h2>
+      <p id="passwordResetPrompt" style="font-size: 14px; color: #666; margin-bottom: 20px;">Set new password for username</p>
+      
+      <form id="passwordForm">
+        <input type="password" id="newPasswordInput" placeholder="Enter New Password" required minlength="4">
+        
+        <div class="modal-buttons">
+          <button type="submit">Update Password</button>
+          <button type="button" id="closePasswordModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="nav.js"></script>
+  <script src="staff.js"></script>
+
+</body>
+</html>

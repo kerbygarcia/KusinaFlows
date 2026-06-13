@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock History</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <h2>kusinaflow</h2>
+      <p>Inventory management</p>
+    </div>
+
+    <nav>
+      <ul>
+        <li id="dashboardBtn">Dashboard</li>
+        <li id="stocksBtn">Stocks</li>
+        <li id="reportBtn">Generate Reports</li>
+        <li id="stockHistoryBtn">Stock History</li>
+        <li id="logoutBtn">Log Out</li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- main content -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div>
+        <h1>Stock History</h1>
+        <p class="subtitle">Complete transaction log of stock activities</p>
+      </div>
+    </header>
+
+    <section class="search-section" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="itemFilterSelect" style="font-weight: bold; font-size: 14px; color: #555;">Filter by Item:</label>
+        <select id="itemFilterSelect" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; background: white; font-size: 14px; cursor: pointer; min-width: 200px;">
+          <option value="all">All Items</option>
+        </select>
+      </div>
+      <button id="btnClearFilter" style="display: none; padding: 10px 18px; border-radius: 8px; font-size: 14px; background: #5a4d41; color: white;">Show All Items</button>
+    </section>
+
+    <section class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Item Name</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Performed By</th>
+            <th>Approved By</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <script src="nav.js"></script>
+  <script src="stock-history.js"></script>
+
+</body>
+</html>
