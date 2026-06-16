@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Reports</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .report-filter-panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 20px 25px;
+      margin-bottom: 20px;
+    }
+
+    .report-filter-panel h3 {
+      color: #3b2a1a;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .date-range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .date-range-row label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .date-range-row input[type="date"] {
+      padding: 9px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fafafa;
+    }
+
+    #reportDateRangeLabel {
+      font-size: 14px;
+      color: #888;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .no-data-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #aaa;
+      font-size: 15px;
+      font-style: italic;
+    }
+
+    @media print {
+      .report-filter-panel {
+        display: none !important;
+      }
+
+      .topbar-actions {
+        display: none !important;
+      }
+
+      #reportDateRangeLabel {
+        display: block !important;
+        color: #555 !important;
+      }
+
+      .table-header {
+        border-bottom: 1px solid #ccc !important;
+        margin-bottom: 15px !important;
+        padding-bottom: 12px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <h2>kusinaflow</h2>
+      <p>Inventory management</p>
+    </div>
+
+    <nav>
+      <ul>
+        <li id="dashboardBtn">Dashboard</li>
+        <li id="stocksBtn">Stocks</li>
+        <li id="reportBtn">Generate Reports</li>
+        <li id="stockHistoryBtn">Stock History</li>
+        <li id="staffManagementBtn">Staff Management</li>
+        <li id="logoutBtn">Log Out</li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- main content -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div>
+        <h1>Generate Reports</h1>
+        <p class="subtitle">View and print inventory, movement, and financial logs</p>
+      </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="dashboard-cards">
+      <div class="card">
+        <h3>Total Items</h3>
+        <p id="totalItemsReport">0</p>
+      </div>
+
+      <div class="card">
+        <h3>Total Inventory Value</h3>
+        <p id="totalValueReport">₱0</p>
+      </div>
+
+      <div class="card">
+        <h3>Low Stock Items</h3>
+        <p id="lowStockReport">0</p>
+      </div>
+    </div>
+
+    <!-- Report Action Buttons -->
+    <div class="topbar-actions" style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+      <button id="btnInventoryReport">Current Inventory Level Report</button>
+      <button id="btnMovementReport">Stock Movement Report</button>
+      <button id="btnFinanceReport">Expense/Financial Report</button>
+    </div>
+
+    <!-- Date Range Filter Panel (shown when a report type is selected) -->
+    <div class="report-filter-panel hidden" id="reportFilterPanel">
+      <h3 id="filterPanelTitle">Select Date Range</h3>
+      <div class="date-range-row">
+        <label for="reportStartDate">From:</label>
+        <input type="date" id="reportStartDate">
+        <label for="reportEndDate">To:</label>
+        <input type="date" id="reportEndDate">
+        <button id="btnGenerateReport">Generate Report</button>
+      </div>
+    </div>
+
+    <!-- Report Table Display Container -->
+    <section class="table-container hidden" id="reportTableContainer">
+      <div class="table-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+        <div>
+          <h2 id="reportScreenTitle" style="font-size: 20px; color: #3b2a1a;">Report</h2>
+          <p id="reportDateRangeLabel"></p>
+        </div>
+        <button id="btnPrintReport">Print Report</button>
+      </div>
+
+      <!-- Printable Area -->
+      <div id="reportPrintArea">
+        <div id="noDataMessage" class="no-data-message hidden">
+          No data was recorded for the selected period.
+        </div>
+
+        <table id="reportTable" class="hidden">
+          <thead id="reportTableHead"></thead>
+          <tbody id="reportTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="reports.js"></script>
+  <script src="../nav.js"></script>
+
+</body>
+</html>
