@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "7viVoxdGmN0=",
+  "success": true,
+  "projectFilePath": "C:\\OOP Project\\KusinaFlows\\backend\\backend.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\kerby\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.8\\microsoft.aspnetcore.openapi.10.0.8.nupkg.sha512",
+    "C:\\Users\\kerby\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
+    "C:\\Users\\kerby\\.nuget\\packages\\npgsql\\10.0.3\\npgsql.10.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
