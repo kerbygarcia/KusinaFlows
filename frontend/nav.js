@@ -72,11 +72,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Style the Log Out Button Red
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-            localStorage.clear(); // Flushes all session tracking data keys simultaneously
+        logoutBtn.addEventListener("click", function(event) {
+            event.preventDefault();
             
-            // Target your absolute server login page placement directly:
-            window.location.href = "/KusinaFlows/frontend/login/login.html";
+            const userConfirmed = confirm("Are you sure you want to log out?");
+
+            if (userConfirmed){
+                localStorage.clear(); // Flushes all session tracking data keys simultaneously
+            
+                // Target your absolute server login page placement directly:
+                window.location.href = "/KusinaFlows/frontend/login/login.html";
+            }
         });
     }
 
