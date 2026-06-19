@@ -710,13 +710,6 @@ async function syncRecentActivityOnDashboard() {
 const reportBtn = document.getElementById("reportBtn") || document.getElementById("reportsBtn");
 const historyBtn = document.getElementById("stockHistoryBtn");
  
-if (document.getElementById("logoutBtn")) {
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-        if (confirm("Log out of KusinaFlow?")) {
-            localStorage.clear(); sessionStorage.clear(); window.location.replace("../login/login.html");
-        }
-    });
-}
  
 // LIFECYCLE BOOTSTRAP RESILIENCE LOOP
 if (document.readyState === "loading") {
