@@ -1,3 +1,5 @@
+using KusinaFlows.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. ADD SERVICES TO THE CONTAINER (Must be ABOVE builder.Build())
@@ -7,8 +9,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// Register the Authorization Services (THIS FIXES YOUR CRASH)
-builder.Services.AddAuthorization();
+// JWT bearer authentication — defined in the separate middleware project
+// (middleware/JwtAuthExtensions.cs). Registers both authentication and
+// authorization services in one call.
+builder.Services.AddKusinaFlowsAuth(builder.Configuration);
 
 // Add your CORS policy configuration
 builder.Services.AddCors(options =>
@@ -35,9 +39,10 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// Order matters here: Activate CORS first, then Authorization, then map endpoints
+// Order matters here: CORS, then authentication, then authorization, then endpoints
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

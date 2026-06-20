@@ -8,18 +8,14 @@ namespace KusinaFlows.Models
         public string Category { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public int Quantity { get; set; }
-        
-        // Use-Thru-Date tracking integers
-        public int UTDmonth { get; set; }
-        public int UTDday { get; set; }
-        public int UTDyear { get; set; }
-
-        // Date-Added tracking integers
-        public int DAmonth { get; set; }
-        public int DAday { get; set; }
-        public int DAyear { get; set; }
-
-        public string Status { get; set; } = string.Empty;
+        public int UTD { get; set; }
         public bool Available { get; set; } = true;
+        public string Action { get; set; } = "Add Item";
+        public string DateAdded { get; set; } = string.Empty;
+
+        // SC_IDs from the logged-in user and selected approver.
+        // NOT NULL in STOCK HISTORY — validated before any history insert.
+        public int? PerformedByScId { get; set; }
+        public int? ApprovedByScId { get; set; }
     }
 }

@@ -1,19 +1,24 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using KusinaFlows.Services;
+using KusinaFlows.Middleware;
 using System;
 
 namespace KusinaFlows.Controllers
 {
     [ApiController]
     [Route("api/auth")]
+    [AllowAnonymous]
     public class AuthController : ControllerBase
     {
         private readonly DatabaseService _dbService;
+        private readonly JwtTokenService _jwtTokenService;
 
-        public AuthController(DatabaseService dbService)
+        public AuthController(DatabaseService dbService, JwtTokenService jwtTokenService)
         {
             _dbService = dbService;
+            _jwtTokenService = jwtTokenService;
         }
 
         [HttpPost("login")]
@@ -24,11 +29,14 @@ namespace KusinaFlows.Controllers
                 return BadRequest(new { message = "All login fields are required." });
             }
 
-            // 1. Declare variables in the method scope so they survive outside the try block
+            // Declare tracking variables in the method scope
             string? dbUsername = null;
             string? dbPassword = null;
             string? firstName = null;
+            string? lastName = null;   
+            string? position = null;   
             int? scId = null;
+            bool isActive = true; // Safety tracking flag initialized to true
 
             try
             {
@@ -36,10 +44,11 @@ namespace KusinaFlows.Controllers
                 {
                     conn.Open();
 
+                    // 🎯 SECURED: Added the missing "Active" column tracking flag to the SQL query
                     string sql = @"
-                        SELECT ""SC_ID"", ""Username"", ""Password"", ""FirstName"" 
+                        SELECT ""SC_ID"", ""Username"", ""Password"", ""FirstName"", ""LastName"", ""Position"", ""Active""
                         FROM public.""STOCK CONTROLLER"" 
-                        WHERE LOWER(""Username"") = LOWER(@Username);"; // LOWER ensures case-insensitive search
+                        WHERE LOWER(""Username"") = LOWER(@Username);"; 
 
                     using (var cmd = new NpgsqlCommand(sql, conn))
                     {
@@ -49,11 +58,13 @@ namespace KusinaFlows.Controllers
                         {
                             if (reader.Read())
                             {
-                                // Assign values to variables outside the block
                                 scId = reader.GetInt32(0);
                                 dbUsername = reader.GetString(1);
                                 dbPassword = reader.GetString(2);
                                 firstName = reader.GetString(3);
+                                lastName = reader.IsDBNull(4) ? "" : reader.GetString(4);  
+                                position = reader.IsDBNull(5) ? "Staff" : reader.GetString(5); 
+                                isActive = reader.IsDBNull(6) ? true : reader.GetBoolean(6); // 🎯 Maps row cell 6 directly to the boolean tracker
                             }
                         }
                     }
@@ -64,39 +75,81 @@ namespace KusinaFlows.Controllers
                 return StatusCode(500, new { message = "System authentication barrier encountered.", error = ex.Message });
             }
 
-            // 2. Evaluate Step-by-Step Security States (Now perfectly reachable!)
-
-            // Step 1: If dbUsername remains null, the database found no matching record
+            // Evaluate Username Existence
             if (string.IsNullOrEmpty(dbUsername))
             {
                 return NotFound(new { message = "Unknown Username" });
             }
 
-            // Step 2: Username matched, now check if plain text password matches
-            if (dbPassword != request.Password)
+            // Evaluate Password Match Integrity (hashed passwords, with a transparent
+            // upgrade path for any legacy plain-text rows still in the database)
+            if (!PasswordHasher.Verify(request.Password, dbPassword!))
             {
                 return Unauthorized(new { message = "Wrong Password" });
             }
 
-            // Step 3: Success! Everything balances out beautifully
+            if (!PasswordHasher.IsHashed(dbPassword))
+            {
+                UpgradeLegacyPassword(scId!.Value, request.Password);
+            }
+
+            // 🔒 SECURITY INTERCEPT LAYER: Block access if administrative status is false
+            if (!isActive)
+            {
+                return StatusCode(403, new { message = "Can't Logged in" });
+            }
+
+            string token = _jwtTokenService.GenerateToken(scId!.Value, dbUsername!, position ?? "Staff");
+
+            // Authenticated successfully! Compile the payload profile object
             return Ok(new {
                 status = "Success",
                 message = $"Maligayang pagbabalik, {firstName}!",
-                username = dbUsername,
-                userId = scId
+                token = token,
+                user = new {
+                    userId   = scId,       // kept for backward compatibility
+                    SC_ID    = scId,       // explicit FK field used by STOCK HISTORY
+                    username = dbUsername,
+                    firstName = firstName,
+                    lastName  = lastName,
+                    position  = position,
+                    active    = isActive
+                }
             });
         }
-    }
 
-    public class LoginRequest
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
+        // ============================================================================
+        // POST api/auth/logout
+        // JWTs are stateless — there's no server-side session to invalidate, so
+        // logging out is just the client discarding its token. This endpoint
+        // exists purely so the frontend has a symmetrical call to make.
+        // ============================================================================
+        [HttpPost("logout")]
+        public IActionResult Logout() => Ok(new { message = "Logged out." });
 
-    public class LoginDto
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        private void UpgradeLegacyPassword(int scId, string plainTextPassword)
+        {
+            try
+            {
+                using var conn = _dbService.GetConnection();
+                conn.Open();
+                using var cmd = new NpgsqlCommand(
+                    @"UPDATE public.""STOCK CONTROLLER"" SET ""Password""=@P WHERE ""SC_ID""=@Id;", conn);
+                cmd.Parameters.AddWithValue("@P", PasswordHasher.Hash(plainTextPassword));
+                cmd.Parameters.AddWithValue("@Id", scId);
+                cmd.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Non-fatal — login already succeeded; the row simply stays plain-text
+                // and will be retried on the next successful login.
+            }
+        }
+
+        public class LoginRequest
+        {
+            public string Username { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
+        }
     }
 }
